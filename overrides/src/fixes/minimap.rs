@@ -1,4 +1,4 @@
-//! v3.6 candidate - lean HUD menu transitions (TEST ONLY).
+//! HYBRID minimap positioning and menu-safe HUD opacity restoration.
 //! Only the outer WBP_MiniMapLayout_C is affected; descendants follow it.
 //! Never change a new widget at 16:9. A previously shifted instance is
 //! restored to its original translation when a later callback sees 16:9.
@@ -192,7 +192,7 @@ pub(super) unsafe fn on_rebuild(widget: *mut UWidget, probe: bool, enabled: bool
     unsafe { consider(widget, probe, enabled, hint, true) }
 }
 
-///// Diagnostic-only fix candidate. Called from the existing SetVisibility hook.
+/// The system-menu visibility gate, called from the existing SetVisibility hook.
 /// Treat only Stack_System's displayed/collapsed transitions as menu changes.
 /// Never manipulate the stack itself or affect the original menu widgets.
 ///
@@ -245,9 +245,8 @@ pub(super) unsafe fn on_menu_visibility(
 }
 
 
-/// TEST ONLY: observe the fixed mission-objective overlay. This specific class
-/// appears in the on-disk UI diagnostic log on field entry. If it is not the
-/// correct owner, the debug build will show no improvement to the left line.
+/// Observe the field quest objective overlay by its exact widget class.
+/// The quest widget follows the same menu opacity protection as the minimap.
 pub(super) unsafe fn on_widget_visibility(widget: *mut UWidget, enabled: bool) {
     if enabled { unsafe { maybe_finish_menu_close(); } }
     if !enabled { return; }
@@ -366,7 +365,7 @@ unsafe fn apply_known_menu_opacity(active: bool) {
 }
 
 
-/// EXPERIMENTAL: Called once per engine frame from a pinned native signature.
+/// Called once per engine frame from the pinned native game-thread signature.
 /// This is the SAME game thread the widget hooks use; no worker thread is
 /// allowed to touch UMG. Runs when stationary, paused or simply looking at
 /// the menu (as long as FEngineLoop continues to tick).
