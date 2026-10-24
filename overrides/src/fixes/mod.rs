@@ -130,6 +130,7 @@ fn hook_shared_widget_updates(module: &ModuleInfo, config: &Config) {
     let minimap_enabled = config.minimap.enable;
     let minimap_hint = config.minimap.name_hint.clone();
     let minimap_hint_rebuild = minimap_hint.clone();
+    let minimap_hint_visibility = minimap_hint.clone();
     // Native UpdateRenderTransform. RCX is the widget, and the fields it reads
     // -- Translation at +0x90, Scale at +0xA0 -- are both consumed immediately
     // after entry, so a movie's scale and a tooltip's translation are written
@@ -172,6 +173,9 @@ fn hook_shared_widget_updates(module: &ModuleInfo, config: &Config) {
             let value = ESlateVisibility(ctx.rdx as u8);
             if minimap_probe {
                 diagnose_menu_visibility(widget, value);
+            }
+            if minimap_enabled {
+                minimap::on_menu_visibility(widget, value, minimap_enabled, &minimap_hint_visibility);
             }
             if movies {
                 movies::on_visibility(widget, value);
