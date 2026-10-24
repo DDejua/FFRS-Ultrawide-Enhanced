@@ -1,64 +1,60 @@
-# Manual installation (no scripts needed)
+# FINAL FANTASY RESONANCE — ULTRAWIDE HYBRID FIX
 
-This guide explains how to install **FFRS Ultrawide Hybrid Fix v1.0.1**, as distributed on [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/71?tab=files). **The public ZIP has no `.cmd` or `.ps1` installers. Installation is manual only:** copy the three runtime files described below.
+Version 1.0.1 | Windows (Steam) | Manual installation only
 
-## 1. Extract the download
+Unofficial community mod. No installer or command scripts required.
 
-Close FINAL FANTASY RESONANCE. Right-click the downloaded ZIP and choose **Extract All**. Open the extracted folder.
+## INSTALLATION
 
-## 2. Find the correct game folder
+### FIND THE GAME'S CORRECT WIN64 DIRECTORY
 
-In Steam, open **Library → right-click FINAL FANTASY RESONANCE → Manage → Browse local files**.
+- Open Steam > Library.
+- Right-click FINAL FANTASY RESONANCE > Manage > Browse local files.
+- In the game folder, open FFRS > Binaries > Win64.
+- Make sure you see FFRS-Win64-Shipping.exe here.
+- Leave this folder open. Your Steam library may be on any drive.
 
-In File Explorer, open **FFRS → Binaries → Win64**. Verify that you can see **`FFRS-Win64-Shipping.exe`**. This is the destination folder; its full drive path depends on where Steam installed the game.
+Copy winmm.dll and scripts folder into:
 
-## 3. Back up any existing files
+`Win64`
 
-Before replacing files, back up any existing `winmm.dll`, `scripts/final_fantasy_resonance_fix.asi`, and `scripts/final_fantasy_resonance_fix.toml`.
+### Launch the game.
 
-**If you use other mods with an ASI loader** (`winmm.dll`, `dxgi.dll`, or `dwmapi.dll`), check compatibility. Do not blindly overwrite or combine loaders.
+- Launch FINAL FANTASY RESONANCE normally from Steam.
+- HYBRID mode is selected by default: centered 16:9 HUD with the minimap
+  positioned toward the right edge of your ultrawide display.
 
-## 4. Copy exactly three files
+## HOW TO CHANGE HUD MODE
 
-From the **extracted mod** folder:
+You only need to replace ONE settings file. Do not reinstall the mod.
 
-1. Copy **`winmm.dll`** into the game's **Win64** folder, next to `FFRS-Win64-Shipping.exe`.
-2. Open or create a folder called **`scripts`** inside **Win64**. Copy **`final_fantasy_resonance_fix.asi`** and **`final_fantasy_resonance_fix.toml`** from the mod's `scripts` folder into that game folder.
+1. Close the game completely.
+2. In the downloaded ZIP, open HUD_PRESETS folder.
+3. Choose one of these folders:
+   - HYBRID (default): centered 16:9 HUD, minimap at ultrawide edge.
+   - ULTRAWIDE: 21:9 HUD
+   - CLASSIC: centered 16:9 HUD
+4. Copy the final_fantasy_resonance_fix.toml from your chosen folder.
+5. Paste it into the GAME'S FFRS\\Binaries\\Win64\\scripts folder and replace
+   the existing file.
 
-The result should look like this:
+   (Back up your TOML first if you customized its settings.)
+
+6. Start the game. Your chosen mode now applies.
+
+Only the .toml settings file changes between modes. Leave winmm.dll and the
+.asi plugin untouched. In the ULTRAWIDE preset, 21:9 HUD is used even on 32:9;
+an additional 32:9 HUD option can be selected manually in TOML (constrain=2).
+
+## UNINSTALLING
+
+Close the game. Remove only the files this mod installed:
 
 ```text
-FFRS/Binaries/Win64/
-├── FFRS-Win64-Shipping.exe       (game file — already there)
-├── winmm.dll                     (mod)
-└── scripts/
-    ├── final_fantasy_resonance_fix.asi
-    └── final_fantasy_resonance_fix.toml
+Win64\\winmm.dll
+Win64\\scripts\\final_fantasy_resonance_fix.asi
+Win64\\scripts\\final_fantasy_resonance_fix.toml (if you want)
 ```
 
-You **do not** have to copy `HUD_PRESETS`, `LICENSES`, `_support` or `README.txt` into the game folder. They remain in your extracted download for mode selection, credits and verification. No automatic installer scripts are included.
-
-## 5. Launch the game
-
-Start normally through Steam. The default HUD mode is **HYBRID**: a centered 16:9 interface with the minimap placed at the ultrawide edge. In v1.0.1, the minimap and quest HUD are temporarily hidden while the system menu is displayed, and restored after closing it.
-
-## Changing HUD mode manually
-
-1. Exit the game.
-2. Open **`HUD_PRESETS`** in your extracted mod folder.
-3. Open the **`HYBRID`**, **`ULTRAWIDE`**, or **`CLASSIC`** folder:
-   - **HYBRID (default):** centered 16:9 HUD, minimap at ultrawide edge.
-   - **ULTRAWIDE:** 21:9 HUD with the minimap at the ultrawide edge.
-   - **CLASSIC:** centered 16:9 HUD with the centered minimap.
-4. Copy that folder's **`final_fantasy_resonance_fix.toml`** into the **game's** `FFRS/Binaries/Win64/scripts` folder, replacing the previous TOML (back it up if customized).
-5. Launch the game again.
-
-Only the TOML settings file changes between HUD presets. **Do not replace the DLL or ASI just to switch modes.**
-
-## Uninstall manually
-
-Close the game first. Delete **only** this mod's files if they were added by this mod: `Win64/winmm.dll`, `Win64/scripts/final_fantasy_resonance_fix.asi`, and optionally `Win64/scripts/final_fantasy_resonance_fix.toml`. Restore backups if these paths existed before installing. Do not delete another mod's ASI loader or unrelated game files.
-
-## Security and compatibility
-
-No installation commands or scripts are required. The mod is an in-process third-party DLL/ASI plugin: copying files manually removes script execution but does not eliminate the inherent risks of running third-party native code. As of the October 24, 2026 upload, Nexus Mods displays the v1.0.1 file as **Safe to use** and enables manual download. This does not guarantee functionality or safety on all systems.
+Restore your backups if those paths existed before installing this mod.
+Do not delete another mod's ASI loader or unrelated game files.
