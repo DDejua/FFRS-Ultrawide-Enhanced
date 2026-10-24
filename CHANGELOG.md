@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.1 — 2026-10-24 (release candidate)
+## 1.0.1 — 2026-10-24 (public Nexus release)
 
 - Fix HYBRID minimap overlay bleeding into system and mission menus.
 - Fix field mission objective overlay bleeding across the left edge of menus.
@@ -9,6 +9,7 @@
 - Cancel the pending HUD restore when another menu opens.
 - Remove broad diagnostic logging for production-oriented testing, retain minimal status logs.
 - Keep `[minimap] probe = false` as the safe default, without disabling quest overlay protection.
+- Public distribution uses **manual installation only**; no `.cmd` or `.ps1` installer scripts. Includes three manual TOML HUD profiles and the revised `README.txt`.
 
 See [release notes](NEXUS_RELEASE_NOTES_v1.0.1.md) for testing scope and the separate controller Y-button issue observed in the unmodded game.
 
