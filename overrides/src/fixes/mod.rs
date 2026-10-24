@@ -21,7 +21,78 @@ mod movies;
 mod post_processing;
 mod widgets;
 
+use std::{cell::RefCell, collections::{HashMap, HashSet}};
+
 use sdk::UMG::{ESlateVisibility, UWidget};
+
+thread_local! {
+    static UI_DIAG_LAST: RefCell<HashMap<String, u8>> = RefCell::new(HashMap::new());
+    static UI_DIAG_REBUILT: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
+}
+
+/// Diagnostic only: reports visibility changes of relevant widgets.
+/// Never alters a widget. Enabled when [minimap] probe = true.
+unsafe fn diagnose_menu_visibility(widget: *mut UWidget, new_visibility: ESlateVisibility) {
+    if !widgets::live(widget) {
+        return;
+    }
+    unsafe {
+        let class = (&*(*widget).Class).GetName();
+        let name = (*widget).GetName();
+        if !diagnostic_relevant(&class, &name) {
+            return;
+        }
+        let old = (*widget).Visibility.0;
+        let new = new_visibility.0;
+        if old == new {
+            return;
+        }
+        let key = format!("{}:{}:{}", class, name, (*widget).Index);
+        UI_DIAG_LAST.with_borrow_mut(|map| {
+            if map.len() >= 512 && !map.contains_key(&key) {
+                return;
+            }
+            if map.insert(key, new) != Some(new) {
+                log::info!(
+                    "UI_DIAG_VIS class={} name={} old={} requested={}",
+                    class, name, old, new
+                );
+            }
+        });
+    }
+}
+
+fn diagnostic_relevant(class: &str, name: &str) -> bool {
+    name.starts_with("Stack_")
+        || class == "CPP_EU_ActivatableWidgetStack"
+        || class == "WBP_BGDimming_C"
+        || class == "WBP_MiniMapLayout_C"
+        || class.ends_with("Layout_C")
+        || class.contains("Menu")
+        || class.contains("Mission")
+        || class.contains("Quest")
+        || class.contains("Map")
+}
+
+/// Diagnostic only: reports once per widget instance when rebuilt.
+unsafe fn diagnose_menu_rebuild(widget: *mut UWidget) {
+    if !widgets::live(widget) {
+        return;
+    }
+    unsafe {
+        let class = (&*(*widget).Class).GetName();
+        let name = (*widget).GetName();
+        if !diagnostic_relevant(&class, &name) {
+            return;
+        }
+        let key = format!("{}:{}:{}", class, name, (*widget).Index);
+        UI_DIAG_REBUILT.with_borrow_mut(|set| {
+            if set.len() < 512 && set.insert(key) {
+                log::info!("UI_DIAG_REBUILD class={} name={}", class, name);
+            }
+        });
+    }
+}
 
 use crate::{
     config::Config,
@@ -99,6 +170,9 @@ fn hook_shared_widget_updates(module: &ModuleInfo, config: &Config) {
         && inject_hook(module, &visibility, move |ctx| unsafe {
             let widget = ctx.rcx as *mut UWidget;
             let value = ESlateVisibility(ctx.rdx as u8);
+            if minimap_probe {
+                diagnose_menu_visibility(widget, value);
+            }
             if movies {
                 movies::on_visibility(widget, value);
             }
@@ -126,6 +200,9 @@ fn hook_shared_widget_updates(module: &ModuleInfo, config: &Config) {
         };
         inject_hook(module, &rebuild, move |ctx| unsafe {
             let widget = ctx.rbx as *mut UWidget;
+            if minimap_probe {
+                diagnose_menu_rebuild(widget);
+            }
             if minimap_probe || minimap_enabled {
                 minimap::on_rebuild(widget, minimap_probe, minimap_enabled, &minimap_hint_rebuild);
             }
