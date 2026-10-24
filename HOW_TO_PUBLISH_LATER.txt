@@ -1,32 +1,48 @@
-FFRS ULTRAWIDE ENHANCED — v1.0.1 PUBLICATION CHECKLIST
+FFRS ULTRAWIDE HYBRID FIX - PUBLICATION STATUS / FUTURE RELEASES
+Updated 2026-10-24
 
-Status: source and candidate package may be prepared ahead of Nexus review.
+CURRENT PUBLIC VERSION
+- Nexus page: https://www.nexusmods.com/finalfantasyresonance/mods/71
+- Publicly downloadable: v1.0.1 (manual installation only).
+- Nexus file scan: "Safe to use" on the Files tab (2026-10-24).
+- User archive: FFRS Ultrawide Hybrid Fix v1.0.1.zip
+- Original Nexus quarantine was avoided on the new manual-only archive;
+  this does NOT prove which file previously triggered the scanner.
+- GitHub: https://github.com/DDejua/FFRS-Ultrawide-Enhanced
+- Public release notes: NEXUS_RELEASE_NOTES_v1.0.1.md
 
-GITHUB
-- Source overlay: https://github.com/DDejua/FFRS-Ultrawide-Enhanced
-- Review source changes and the successful Windows CI build for the 1.0.1 candidate.
-- Keep the original 1.0.0 source/history intact; use the v1.0.1 release notes.
-- The GitHub Actions artifact is build evidence and is NOT a replacement for an end-user ZIP.
+PUBLIC ZIP CONTENTS / POLICY
+- winmm.dll: official ThirteenAG Ultimate ASI Loader
+- scripts/final_fantasy_resonance_fix.asi
+- scripts/final_fantasy_resonance_fix.toml
+- HUD_PRESETS/{HYBRID,ULTRAWIDE,CLASSIC}/final_fantasy_resonance_fix.toml
+- README.txt containing only manual-install instructions
+- LICENSES/ third-party notices and _support/ build and hash records
+- NO CHANGELOG.txt, .cmd or .ps1 files in the public ZIP.
+- Installer/build .ps1 tools may remain in the GITHUB SOURCE repository;
+  never include these source-only developer tools in a Nexus binary ZIP.
 
-END-USER ZIP
-- Update the tested v1.0.0 ZIP by replacing ONLY the plugin ASI and versioned
-  installation/readme text; preserve the hash-verified official winmm.dll, TOML
-  HUD presets, installer scripts and third-party notices.
-- Recompute _support/SHA256.txt from the final files.
-- Audit ZIP safety/paths and test both manual and script installation.
-- Retest all three HUD presets in-game with that exact packaged ASI before
-  publishing. The package can be held as a release candidate meanwhile.
+FUTURE UPDATES
+1. Implement changes on a GitHub branch; review, test and merge.
+2. Build the ASI in pinned Windows CI with compiler path redaction and
+   licensing/loader provenance checks. Do not publish the Actions artifact
+   as the end-user ZIP.
+3. Package the verified ASI and official loader together with the three
+   TOML profiles, the current README and full license notices. Keep
+   packaging manual-install only.
+4. Recompute SHA-256 for all archive members, verify ZIP integrity and
+   check for unintended scripts or binaries.
+5. Test the EXACT new end-user archive in game (especially the three
+   profiles and both menu open/close transitions) before publication.
+6. Publish a new file version to EXISTING Nexus mod #71. Nexus may run
+   separate malware scanning or manual review for each new upload.
+7. Check the actual Nexus file scan and availability after upload; verify
+   public links, changelog, credits and source reference. Avoid deleting
+   files merely to retry a pending scan.
+8. If the scanner quarantines a legitimate new version, reference the
+   existing support ticket #273831 when asking Nexus for review.
 
-NEXUS MODS
-- Existing mod page: https://www.nexusmods.com/finalfantasyresonance/mods/71
-- Support ticket: #273831, awaiting human response.
-- DO NOT delete quarantined v1.0.0 or upload a new file before receiving
-  support instructions about direct v1.0.1 review.
-- Once directed, upload v1.0.1 to the EXISTING mod page. Preserve version
-  history and link the GitHub source and MIT notices.
-- A newer version may be subject to separate security scanning or manual review.
-
-KNOWN ISSUE
-- Occasional Y/controller failure to reopen the system menu reproduced in
-  unmodded game; possible exacerbation in modded builds is not proven.
-- Keyboard ESC did not show the problem in the tester's run.
+KNOWN INPUT ISSUE
+- Occasional Y-button reopening failures occurred even without the mod,
+  though the tester saw the problem much less often unmodded.
+- The root cause of any difference in frequency is unresolved.
