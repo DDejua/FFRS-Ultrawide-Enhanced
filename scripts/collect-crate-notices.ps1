@@ -24,6 +24,14 @@ foreach ($p in $pkgs) {
     $licenseFiles = @(Get-ChildItem -LiteralPath $path -File |
         Where-Object { $_.Name -match '^(LICENSE|LICENCE|COPYING|NOTICE|UNLICENSE|PATENTS)([._-].*)?$' } |
         Sort-Object Name)
+    # iced-x86 1.21.0's registry tarball omits the repo-root LICENSE.txt.
+    # Use the corresponding v1.21.0 notice committed from icedland/iced.
+    if ($licenseFiles.Count -eq 0 -and $p.name -eq 'iced-x86' -and $p.version -eq '1.21.0') {
+        $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+        $fallback = Join-Path $repoRoot 'LICENSES\iced-x86-1.21.0_MIT.txt'
+        if (!(Test-Path -LiteralPath $fallback -PathType Leaf)) { throw 'Pinned iced-x86 license notice missing.' }
+        $licenseFiles = @(Get-Item -LiteralPath $fallback)
+    }
     $names = @($licenseFiles | ForEach-Object { $_.Name })
     if ($licenseFiles.Count -eq 0) { $missing += "$($p.name) $($p.version)" }
     $report.Add("| $($p.name) | $($p.version) | $($p.license) | $($names -join ', ') |")
