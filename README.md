@@ -1,6 +1,8 @@
 # FINAL FANTASY RESONANCE — Ultrawide Enhanced (community source overlay)
 
-**Source review package — not yet a public release.**
+**Source code and Windows build workflow for the community-enhanced mod.**
+
+The mod's GitHub-built candidate completed a clean Windows Steam installation test, all three HUD modes, multiple encounters, and 16:9 streaming on 2026-10-24. Other hardware and aspect ratios still need independent testing.
 
 This project provides **only the changed source files**, relative to the upstream
 [PolarWizard FINAL FANTASY RESONANCE Fix](https://github.com/PolarWizard/final-fantasy-resonance-fix)
@@ -57,7 +59,7 @@ or binary reproducibility. Test against a clean Steam install before release.
 - **Minimap extension, HUD selector, packaging**: community modifications.
 
 `LICENSES/` contains copies of the upstream notices. Review the Rust dependency
-license inventory and bundle any required third-party notices before publication.
+license inventory and the complete collected third-party notices when distributing a public binary.
 See `RELEASE_GATES.md` and `THIRD_PARTY_DEPENDENCIES.md`.
 
 This project is unofficial and is not affiliated with the game's developers,
