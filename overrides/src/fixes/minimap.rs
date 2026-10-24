@@ -1,4 +1,4 @@
-//! v3.2 candidate - menu-aware ultrawide minimap position (TEST ONLY).
+//! v3.3 candidate - no teleport: suppress drawing during menus (TEST ONLY).
 //! Only the outer WBP_MiniMapLayout_C is affected; descendants follow it.
 //! Never change a new widget at 16:9. A previously shifted instance is
 //! restored to its original translation when a later callback sees 16:9.
@@ -16,6 +16,7 @@ use super::{
 };
 
 const MINIMAP_LAYOUT_CLASS: &str = "WBP_MiniMapLayout_C";
+const FIELD_QUEST_CLASS: &str = "WBP_FieldQuestLayout_C";
 const BASE_ASPECT: f64 = 16.0 / 9.0;
 // Additional space taken from the author's top-right screen margins.
 // Physical screen pixels; divided by DPI before writing UMG translations.
@@ -29,6 +30,8 @@ thread_local! {
     static MENU_ACTIVE: Cell<bool> = const { Cell::new(false) };
     // Store an object index and full identity instead of a stale raw pointer.
     static ACTIVE_MINIMAP: RefCell<Option<(i32, String)>> = const { RefCell::new(None) };
+    static ACTIVE_QUEST: RefCell<Option<(i32, String)>> = const { RefCell::new(None) };
+    static MENU_OPACITY: RefCell<HashMap<String, f32>> = RefCell::new(HashMap::new());
 }
 
 /// Only trust a fresh viewport measurement. The SDK returns 1x1 if no world
@@ -95,8 +98,7 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
         // Tolerance also absorbs tiny rounding differences at exact 16:9.
         // Wide screens outside a menu: restore the root's 16:9 side gutter, then nudge the
         // minimap nearer to the physical top-right edge. Exact 16:9 stays 0,0.
-        let menu_active = MENU_ACTIVE.get();
-        let (shift_x, shift_y) = if ratio > BASE_ASPECT + 0.001 && !menu_active {
+        let (shift_x, shift_y) = if ratio > BASE_ASPECT + 0.001 {
             (
                 (width - height * BASE_ASPECT).max(0.0) / (2.0 * dpi)
                     + EXTRA_CORNER_X_PX / dpi,
@@ -173,11 +175,13 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
 
 /// Called from the existing UWidget UpdateRenderTransform hook.
 pub(super) unsafe fn on_transform(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str) {
+    if probe && enabled { unsafe { observe_quest(widget); } }
     unsafe { consider(widget, probe, enabled, hint, false) }
 }
 
 /// Called from the existing UUserWidget rebuild hook.
 pub(super) unsafe fn on_rebuild(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str) {
+    if probe && enabled { unsafe { observe_quest(widget); } }
     unsafe { consider(widget, probe, enabled, hint, true) }
 }
 
@@ -192,6 +196,7 @@ pub(super) unsafe fn on_menu_visibility(
     requested: ESlateVisibility,
     enabled: bool,
     hint: &str,
+    probe: bool,
 ) {
     if !enabled || hint.trim() != MINIMAP_LAYOUT_CLASS || !live(widget) {
         return;
@@ -237,7 +242,89 @@ pub(super) unsafe fn on_menu_visibility(
         log::info!("MINIMAP_MENU_GATE target=unexpected_class (no edit)");
         return;
     }
-    // Force a real Slate update on the transition, even if the game never
-    // touches this widget's render transform while a menu is open.
-    unsafe { consider(minimap, false, enabled, hint, true) };
+    // Do NOT move the minimap. It remains parked at its wide position.
+    // Only change rendering opacity, so it never visibly traverses the screen.
+    unsafe { set_menu_opacity(minimap, active, "minimap"); }
+    if probe {
+        let quest = ACTIVE_QUEST.with_borrow(|v| v.clone());
+        if let Some((index, full_name)) = quest {
+            let obj = UObject::GObjects.GetByIndex(index);
+            if live(obj) && unsafe { (*obj).GetFullName() } == full_name {
+                unsafe { set_menu_opacity(obj.cast(), active, "field_quest"); }
+            } else {
+                ACTIVE_QUEST.with_borrow_mut(|v| *v = None);
+                log::info!("HUD_OPACITY_GUARD quest=stale");
+            }
+        } else {
+            log::info!("HUD_OPACITY_GUARD quest=not_found");
+        }
+    }
+}
+
+
+/// TEST ONLY: observe the fixed mission-objective overlay. This specific class
+/// appears in the on-disk UI diagnostic log on field entry. If it is not the
+/// correct owner, the debug build will show no improvement to the left line.
+pub(super) unsafe fn on_widget_visibility(widget: *mut UWidget, probe: bool, enabled: bool) {
+    if !probe || !enabled { return; }
+    unsafe { observe_quest(widget); }
+}
+
+unsafe fn observe_quest(widget: *mut UWidget) {
+    if !live(widget) { return; }
+    let class = unsafe { (&*(&(*widget)).Class).GetName() };
+    if class != FIELD_QUEST_CLASS { return; }
+    let full_name = unsafe { (*widget).GetFullName() };
+    let index = unsafe { (&(*widget)).Index };
+    let was_changed = ACTIVE_QUEST.with_borrow_mut(|entry| {
+        if entry.as_ref().is_some_and(|v| v.0 == index && v.1 == full_name) {
+            false
+        } else {
+            *entry = Some((index, full_name.clone()));
+            true
+        }
+    });
+    if was_changed {
+        let mut ancestry = Vec::new();
+        let mut cur = widget;
+        for _ in 0..10 {
+            let outer = outward(cur);
+            if !live(outer) { break; }
+            ancestry.push(unsafe { (&*(&(*outer)).Class).GetName() });
+            cur = outer;
+        }
+        log::info!("HUD_OPACITY_QUEST_TRACK index={} parents={:?}", index, ancestry);
+    }
+    if MENU_ACTIVE.get() {
+        unsafe { set_menu_opacity(widget, true, "field_quest"); }
+    }
+}
+
+/// Stores the original opacity on entry, restores it on exit. It never writes
+/// Visibility or relocates the widget, so the game's hit-testing/layout is
+/// unchanged. All operations run on the UMG game thread.
+unsafe fn set_menu_opacity(widget: *mut UWidget, menu_active: bool, label: &str) {
+    if !live(widget) { return; }
+    let key = unsafe { (*widget).GetFullName() };
+    let current = unsafe { (*widget).RenderOpacity };
+    if menu_active {
+        MENU_OPACITY.with_borrow_mut(|map| {
+            if !map.contains_key(&key) {
+                map.insert(key.clone(), current);
+            }
+        });
+        if current > 0.0001 {
+            unsafe { (*widget).SetRenderOpacity(0.0); }
+            log::info!("HUD_OPACITY_GUARD hide={} from={:.3}", label, current);
+        }
+    } else {
+        let baseline = MENU_OPACITY.with_borrow_mut(|map| map.remove(&key));
+        if let Some(opacity) = baseline {
+            // Avoid redundant setter calls.
+            if (current - opacity).abs() > 0.0001 {
+                unsafe { (*widget).SetRenderOpacity(opacity); }
+                log::info!("HUD_OPACITY_GUARD show={} to={:.3}", label, opacity);
+            }
+        }
+    }
 }
