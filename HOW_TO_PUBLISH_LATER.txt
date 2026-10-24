@@ -1,0 +1,13 @@
+RELEASE WORKFLOW (do not publish the test ZIP as a public release)
+1. Create a NEW GitHub repo under the account you choose.
+2. Upload the contents of this SOURCE STARTER to its root (no private backup ZIP).
+3. In Actions, run 'Build Windows candidate (not a release)'.
+4. Download the build artifact, inspect the metadata & test it in-game.
+5. Fill in Rust third-party licensing notices, verify loader version and static privacy audit.
+6. Once tested, replace the old anonymized ASI in the tested CLEAN RC package
+   with the fresh CI build, rename DLL->ASI, rebuild hash manifest, and
+   re-test BOTH installation methods and all HUD modes.
+7. Only then create a public GitHub release and a Nexus Mods file page.
+
+WARNING: The old tested executable differs from a new clean rebuild.
+DO NOT treat CI compilation alone as validating the new runtime binary.

@@ -1,0 +1,19 @@
+# Upstream clone and local/cloud build artifacts: never publish private binaries or SDK copies here.
+/upstream/
+/target/
+**/target/
+*.dll
+*.asi
+*.exe
+*.pdb
+*.zip
+*.log
+*.bak
+*.backup*
+*.user
+*.suo
+.vs/
+.vscode/
+.env
+.env.*
+__pycache__/

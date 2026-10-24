@@ -1,0 +1,47 @@
+name: Build Windows candidate (not a release)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout community source overlay
+        uses: actions/checkout@v4
+      - name: Install pinned Rust toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.99.1 --profile minimal
+          rustup default 1.99.1
+      - name: Prepare pinned PolarWizard 0.3.0 source
+        shell: pwsh
+        run: .\scripts\prepare-upstream.ps1
+      - name: Compile with source path redaction
+        shell: pwsh
+        working-directory: upstream
+        run: |
+          $env:RUSTFLAGS = "--remap-path-prefix=$env:USERPROFILE=/rust-home --remap-path-prefix=$env:GITHUB_WORKSPACE=/workspace"
+          $env:CARGO_INCREMENTAL = '0'
+          cargo build --release --locked
+          if ($LASTEXITCODE -ne 0) { throw 'Cargo compilation failed' }
+      - name: Generate dependency metadata for legal review
+        shell: pwsh
+        working-directory: upstream
+        run: |
+          cargo metadata --format-version 1 --locked | Out-File -FilePath 'dependency-metadata.json' -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'Cargo metadata failed' }
+      - name: Inspect for local Windows home directory strings
+        shell: pwsh
+        run: .\scripts\scan-binary-privacy.ps1 -Binary '.\upstream\target\release\final_fantasy_resonance_fix.dll'
+      - name: Upload TEST ONLY artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffrs-enhanced-WINDOWS-CANDIDATE-not-for-publication
+          path: |
+            upstream/target/release/final_fantasy_resonance_fix.dll
+            upstream/dependency-metadata.json
+          if-no-files-found: error
