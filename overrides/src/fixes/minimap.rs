@@ -1,13 +1,13 @@
-//! v3.1 - small upper-right corner nudge for the ultrawide minimap.
+//! v3.2 candidate - menu-aware ultrawide minimap position (TEST ONLY).
 //! Only the outer WBP_MiniMapLayout_C is affected; descendants follow it.
 //! Never change a new widget at 16:9. A previously shifted instance is
 //! restored to its original translation when a later callback sees 16:9.
 
-use std::{cell::RefCell, collections::{HashMap, HashSet}};
+use std::{cell::{Cell, RefCell}, collections::{HashMap, HashSet}};
 
 use sdk::{
-    CoreUObject::FVector2D,
-    UMG::{UUserWidget, UWidget, UWidgetLayoutLibrary},
+    CoreUObject::{FVector2D, UObject},
+    UMG::{ESlateVisibility, UUserWidget, UWidget, UWidgetLayoutLibrary},
 };
 
 use super::{
@@ -26,6 +26,9 @@ thread_local! {
     static REPORTED: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
     static ORIGINAL_X: RefCell<HashMap<String, OffsetState>> = RefCell::new(HashMap::new());
     static ORIGINAL_Y: RefCell<HashMap<String, OffsetState>> = RefCell::new(HashMap::new());
+    static MENU_ACTIVE: Cell<bool> = const { Cell::new(false) };
+    // Store an object index and full identity instead of a stale raw pointer.
+    static ACTIVE_MINIMAP: RefCell<Option<(i32, String)>> = const { RefCell::new(None) };
 }
 
 /// Only trust a fresh viewport measurement. The SDK returns 1x1 if no world
@@ -90,9 +93,10 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
         };
         let ratio = width / height;
         // Tolerance also absorbs tiny rounding differences at exact 16:9.
-        // Wide screens: restore the root's 16:9 side gutter, then nudge the
+        // Wide screens outside a menu: restore the root's 16:9 side gutter, then nudge the
         // minimap nearer to the physical top-right edge. Exact 16:9 stays 0,0.
-        let (shift_x, shift_y) = if ratio > BASE_ASPECT + 0.001 {
+        let menu_active = MENU_ACTIVE.get();
+        let (shift_x, shift_y) = if ratio > BASE_ASPECT + 0.001 && !menu_active {
             (
                 (width - height * BASE_ASPECT).max(0.0) / (2.0 * dpi)
                     + EXTRA_CORNER_X_PX / dpi,
@@ -116,7 +120,14 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
             return;
         }
 
-        // At 16:9, do not alter a newly created widget. An instance that
+        // Remember the confirmed live instance for immediate adjustment when
+        // Stack_System changes. GObjects is re-queried on every menu event.
+        let full_name = (*widget).GetFullName();
+        ACTIVE_MINIMAP.with_borrow_mut(|target| {
+            *target = Some(((&(*widget)).Index, full_name));
+        });
+
+        // At 16:9 or while a menu is active, do not alter a newly created widget. An instance that
         // was previously shifted can be restored in either axis instead.
         let current_x = (*widget).RenderTransform.Translation.X as f32;
         let current_y = (*widget).RenderTransform.Translation.Y as f32;
@@ -168,4 +179,65 @@ pub(super) unsafe fn on_transform(widget: *mut UWidget, probe: bool, enabled: bo
 /// Called from the existing UUserWidget rebuild hook.
 pub(super) unsafe fn on_rebuild(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str) {
     unsafe { consider(widget, probe, enabled, hint, true) }
+}
+
+///// Diagnostic-only fix candidate. Called from the existing SetVisibility hook.
+/// Treat only Stack_System's displayed/collapsed transitions as menu changes.
+/// Never manipulate the stack itself or affect the original menu widgets.
+///
+/// We re-resolve the minimap by GObjects index and compare its full name,
+/// avoiding cached pointers across gameplay/world transitions.
+pub(super) unsafe fn on_menu_visibility(
+    widget: *mut UWidget,
+    requested: ESlateVisibility,
+    enabled: bool,
+    hint: &str,
+) {
+    if !enabled || hint.trim() != MINIMAP_LAYOUT_CLASS || !live(widget) {
+        return;
+    }
+    unsafe {
+        let class = (&*(&(*widget)).Class).GetName();
+        if class != "CPP_EU_ActivatableWidgetStack" || (*widget).GetName() != "Stack_System" {
+            return;
+        }
+    }
+    let active = if requested == ESlateVisibility::SelfHitTestInvisible
+        || requested == ESlateVisibility::Visible
+    {
+        true
+    } else if requested == ESlateVisibility::Collapsed
+        || requested == ESlateVisibility::Hidden
+    {
+        false
+    } else {
+        return;
+    };
+    if MENU_ACTIVE.replace(active) == active {
+        return;
+    }
+    log::info!("MINIMAP_MENU_GATE active={} stack=Stack_System", active);
+
+    let target = ACTIVE_MINIMAP.with_borrow(|v| v.clone());
+    let Some((index, full_name)) = target else {
+        log::info!("MINIMAP_MENU_GATE target=unavailable");
+        return;
+    };
+    let object = UObject::GObjects.GetByIndex(index);
+    if !live(object) || unsafe { (*object).GetFullName() } != full_name {
+        ACTIVE_MINIMAP.with_borrow_mut(|v| *v = None);
+        log::info!("MINIMAP_MENU_GATE target=stale (no edit)");
+        return;
+    }
+    let minimap = object.cast::<UWidget>();
+    if !unsafe { (*minimap).IsA(UUserWidget::StaticClass()) }
+        || unsafe { (&*(&(*minimap)).Class).GetName() } != MINIMAP_LAYOUT_CLASS
+    {
+        ACTIVE_MINIMAP.with_borrow_mut(|v| *v = None);
+        log::info!("MINIMAP_MENU_GATE target=unexpected_class (no edit)");
+        return;
+    }
+    // Force a real Slate update on the transition, even if the game never
+    // touches this widget's render transform while a menu is open.
+    unsafe { consider(minimap, false, enabled, hint, true) };
 }
