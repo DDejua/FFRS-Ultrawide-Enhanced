@@ -41,6 +41,12 @@ jobs:
         run: |
           cargo metadata --format-version 1 --locked | Out-File -FilePath 'dependency-metadata.json' -Encoding utf8
           if ($LASTEXITCODE -ne 0) { throw 'Cargo metadata failed' }
+      - name: Collect full notices from pinned Rust crates
+        shell: pwsh
+        run: .\scripts\collect-crate-notices.ps1
+      - name: Confirm bundled loader matches official ThirteenAG asset
+        shell: pwsh
+        run: .\scripts\check-official-loader.ps1
       - name: Inspect for local Windows home directory strings
         shell: pwsh
         run: .\scripts\scan-binary-privacy.ps1 -Binary '.\upstream\target\release\final_fantasy_resonance_fix.dll'
@@ -51,4 +57,6 @@ jobs:
           path: |
             upstream/target/release/final_fantasy_resonance_fix.dll
             upstream/dependency-metadata.json
+            upstream/license_audit/**
+            upstream/loader_audit/**
           if-no-files-found: error
