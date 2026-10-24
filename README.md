@@ -2,7 +2,7 @@
 
 **Source code and Windows build workflow for the community-enhanced mod.**
 
-The mod's GitHub-built candidate completed a clean Windows Steam installation test, all three HUD modes, multiple encounters, and 16:9 streaming on 2026-10-24. Other hardware and aspect ratios still need independent testing.
+The v1.0.0 build was tested after a clean Windows Steam installation with three HUD modes, several encounters, and 16:9 streaming on 2026-10-24. **v1.0.1 is prepared as a release candidate; full release-packaged testing and Nexus security review remain pending.** Other hardware and aspect ratios still need independent testing.
 
 This project provides **only the changed source files**, relative to the upstream
 [PolarWizard FINAL FANTASY RESONANCE Fix](https://github.com/PolarWizard/final-fantasy-resonance-fix)
@@ -15,7 +15,8 @@ No game files, SDK dump, personal builds, or local user profile paths are includ
 - Independent minimap relocation for the `WBP_MiniMapLayout_C` root; offset is
   derived from actual viewport geometry and DPI. Added offsets are 18 px right,
   18 px up on wider-than-16:9 viewports, and zero for 16:9.
-- TOML `[minimap]` options `enable`, `probe`, and `name_hint`.
+- TOML `[minimap]` options `enable`, `probe`, and `name_hint`. The default HYBRID preset enables the minimap relocation, while CLASSIC and ULTRAWIDE disable it.
+- **v1.0.1:** when `Stack_System` is opened, suppress the shifted minimap and field quest box without teleporting either widget. Restore their original opacity after a ~160 ms menu-close grace via a game-thread frame callback, even with no player movement. On reopen, cancel the pending restoration. The HUD menu isolation activates only when minimap relocation is enabled; `probe = false` remains supported.
 - Battle transition scratch render-target lifetime correction from contributor
   [Darjjj's upstream PR #3](https://github.com/PolarWizard/final-fantasy-resonance-fix/pull/3)
   (the PR is third-party work, not independently invented by this project).
@@ -42,8 +43,8 @@ or binary reproducibility. Test against a clean Steam install before release.
 
 ## Testing and known limits
 
-- Windows Steam, 3440 × 1440: three HUD modes and several hours of battle
-  transition testing were reported successful by a tester on 2026-10-24.
+- Windows Steam, 3440 × 1440: three HUD modes and battle transition testing were reported successful for v1.0.0 on 2026-10-24. The v1.0.1 experimental HYBRID minimap/quest solution was subsequently reported visually successful, including idle restoration; final packaged v1.0.1 validation is pending.
+- A controller Y-button menu reopen may sometimes require another press. The user reproduced it in the unmodded game, though less frequently. Our code does not hook gamepad input. The reported frequency difference has **not** been isolated or resolved. Keyboard ESC did not show the issue in the same testing.
 - 16:9 streaming: reported working on the same machine.
 - 2560 × 1080, 3840 × 1600, 32:9 and other game builds are **not yet certified**.
 - The ultrawide root code, not just our minimap, may still install hooks on
