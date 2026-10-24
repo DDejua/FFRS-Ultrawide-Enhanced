@@ -37,7 +37,7 @@ unsafe fn diagnose_menu_visibility(widget: *mut UWidget, new_visibility: ESlateV
         return;
     }
     unsafe {
-        let class = (&*(*widget).Class).GetName();
+        let class = (&*(&(*widget)).Class).GetName();
         let name = (*widget).GetName();
         if !diagnostic_relevant(&class, &name) {
             return;
@@ -47,7 +47,7 @@ unsafe fn diagnose_menu_visibility(widget: *mut UWidget, new_visibility: ESlateV
         if old == new {
             return;
         }
-        let key = format!("{}:{}:{}", class, name, (*widget).Index);
+        let key = format!("{}:{}:{}", class, name, (&(*widget)).Index);
         UI_DIAG_LAST.with_borrow_mut(|map| {
             if map.len() >= 512 && !map.contains_key(&key) {
                 return;
@@ -80,12 +80,12 @@ unsafe fn diagnose_menu_rebuild(widget: *mut UWidget) {
         return;
     }
     unsafe {
-        let class = (&*(*widget).Class).GetName();
+        let class = (&*(&(*widget)).Class).GetName();
         let name = (*widget).GetName();
         if !diagnostic_relevant(&class, &name) {
             return;
         }
-        let key = format!("{}:{}:{}", class, name, (*widget).Index);
+        let key = format!("{}:{}:{}", class, name, (&(*widget)).Index);
         UI_DIAG_REBUILT.with_borrow_mut(|set| {
             if set.len() < 512 && set.insert(key) {
                 log::info!("UI_DIAG_REBUILD class={} name={}", class, name);
