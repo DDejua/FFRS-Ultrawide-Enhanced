@@ -154,7 +154,7 @@ fn hook_shared_widget_updates(module: &ModuleInfo, config: &Config) {
 }
 
 
-/// EXPERIMENTAL: FEngineLoop::Tick's idle-mode preamble executes once per
+/// FEngineLoop::Tick's idle-mode preamble executes once per
 /// engine frame on the game thread (including while UI is open).
 ///
 /// The signature is derived from PolarWizard's *existing* background idle
@@ -178,7 +178,7 @@ fn install_menu_frame_tick(module: &ModuleInfo, config: &Config) {
         "40 32 F6 44 39 28 74 ?? E8 ?? ?? ?? ?? 84 C0 75"
     };
     let hook = SignatureHook {
-        tag: "Menu restore game-thread frame tick (TEST ONLY)",
+        tag: "Menu restore game-thread frame tick",
         signature,
         offset: 0,
     };
@@ -186,7 +186,7 @@ fn install_menu_frame_tick(module: &ModuleInfo, config: &Config) {
         minimap::on_game_thread_tick();
     });
     if installed {
-        log::info!("HUD_OPACITY_FRAME_HOOK installed=true (test candidate)");
+        log::info!("HUD_OPACITY_FRAME_HOOK installed=true");
     } else {
         log::warn!("HUD_OPACITY_FRAME_HOOK installed=false; retaining UMG fallback");
     }
