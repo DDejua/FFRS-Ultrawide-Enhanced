@@ -17,7 +17,6 @@ use super::{
 };
 
 const MINIMAP_LAYOUT_CLASS: &str = "WBP_MiniMapLayout_C";
-const FIELD_QUEST_CLASS: &str = "WBP_FieldQuestLayout_C";
 // Deliberately small, diagnostic-only grace period after a menu collapses.
 // Prevents early minimap/quest reveal if another menu opens immediately.
 const MENU_CLOSE_GRACE: Duration = Duration::from_millis(160);
@@ -212,7 +211,7 @@ pub(super) unsafe fn on_menu_visibility(
         static STACK_CLASS: NameCache = NameCache::new("CPP_EU_ActivatableWidgetStack");
         static STACK_NAME: NameCache = NameCache::new("Stack_System");
         if (&*(&(*widget)).Class).Name != STACK_CLASS.get()
-            || (*widget).Name != STACK_NAME.get()
+            || (&(*widget)).Name != STACK_NAME.get()
         {
             return;
         }
