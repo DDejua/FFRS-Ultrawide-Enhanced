@@ -330,12 +330,12 @@ unsafe fn maybe_finish_menu_close() {
 unsafe fn apply_known_menu_opacity(active: bool) {
     let target = ACTIVE_MINIMAP.with_borrow(|v| v.clone());
     if let Some((index, full_name)) = target {
+        static MINIMAP_NAME: NameCache = NameCache::new("WBP_MiniMapLayout_C");
         let object = UObject::GObjects.GetByIndex(index);
         if live(object) && unsafe { (*object).GetFullName() } == full_name {
             let minimap = object.cast::<UWidget>();
             if unsafe { (*minimap).IsA(UUserWidget::StaticClass()) }
-                && unsafe { (&*(&(*minimap)).Class).Name }
-                    == NameCache::new("WBP_MiniMapLayout_C").get()
+                && unsafe { (&*(&(*minimap)).Class).Name } == MINIMAP_NAME.get()
             {
                 unsafe { set_menu_opacity(minimap, active, "minimap"); }
             } else {
