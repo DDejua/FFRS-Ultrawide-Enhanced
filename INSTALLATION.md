@@ -1,6 +1,6 @@
 # Manual installation (no scripts needed)
 
-This guide explains how to install **FFRS Ultrawide Enhanced v1.0.1** without running any `.cmd` or PowerShell files. You only need to copy **three files**.
+This guide explains how to install **FFRS Ultrawide Hybrid Fix v1.0.1**, as distributed on [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/71?tab=files). **The public ZIP has no `.cmd` or `.ps1` installers. Installation is manual only:** copy the three runtime files described below.
 
 ## 1. Extract the download
 
@@ -36,7 +36,7 @@ FFRS/Binaries/Win64/
     └── final_fantasy_resonance_fix.toml
 ```
 
-You **do not** have to copy `HUD_PRESETS`, `LICENSES`, `_support`, the README or the `.cmd` files into the game folder.
+You **do not** have to copy `HUD_PRESETS`, `LICENSES`, `_support` or `README.txt` into the game folder. They remain in your extracted download for mode selection, credits and verification. No automatic installer scripts are included.
 
 ## 5. Launch the game
 
@@ -55,6 +55,10 @@ Start normally through Steam. The default HUD mode is **HYBRID**: a centered 16:
 
 Only the TOML settings file changes between HUD presets. **Do not replace the DLL or ASI just to switch modes.**
 
-For automatic installation, consult `README.txt` in the download and use `INSTALL_MOD.cmd`; `CHANGE_HUD_MODE.cmd` is the automatic HUD selector.
+## Uninstall manually
 
-Both installation methods load the same native binaries. Installing without scripts does not remove the risks inherent in running third-party DLL/ASI mods.
+Close the game first. Delete **only** this mod's files if they were added by this mod: `Win64/winmm.dll`, `Win64/scripts/final_fantasy_resonance_fix.asi`, and optionally `Win64/scripts/final_fantasy_resonance_fix.toml`. Restore backups if these paths existed before installing. Do not delete another mod's ASI loader or unrelated game files.
+
+## Security and compatibility
+
+No installation commands or scripts are required. The mod is an in-process third-party DLL/ASI plugin: copying files manually removes script execution but does not eliminate the inherent risks of running third-party native code. As of the October 24, 2026 upload, Nexus Mods displays the v1.0.1 file as **Safe to use** and enables manual download. This does not guarantee functionality or safety on all systems.
