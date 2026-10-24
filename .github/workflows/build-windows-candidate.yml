@@ -2,7 +2,7 @@ name: Build Windows candidate (not a release)
 
 on:
   push:
-    branches: [main, test/menu-diagnostics-v101, test/menu-fix-candidate-v101, test/menu-hud-opacity-v101, test/menu-transition-grace-v101]
+    branches: [main, test/menu-diagnostics-v101, test/menu-fix-candidate-v101, test/menu-hud-opacity-v101, test/menu-transition-grace-v101, test/menu-tick-restoration-v101]
     paths:
       - '.github/workflows/build-windows-candidate.yml'
       - 'overrides/**'
