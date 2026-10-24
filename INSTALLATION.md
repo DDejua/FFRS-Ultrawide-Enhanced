@@ -1,6 +1,6 @@
 # Manual installation (no scripts needed)
 
-This guide explains how to install **FFRS Ultrawide Enhanced v1.0.0** without running any `.cmd` or PowerShell files. You only need to copy **three files**.
+This guide explains how to install **FFRS Ultrawide Enhanced v1.0.1** without running any `.cmd` or PowerShell files. You only need to copy **three files**.
 
 ## 1. Extract the download
 
@@ -40,7 +40,7 @@ You **do not** have to copy `HUD_PRESETS`, `LICENSES`, `_support`, the README or
 
 ## 5. Launch the game
 
-Start normally through Steam. The default HUD mode is **HYBRID**: a centered 16:9 interface with the minimap placed at the ultrawide edge.
+Start normally through Steam. The default HUD mode is **HYBRID**: a centered 16:9 interface with the minimap placed at the ultrawide edge. In v1.0.1, the minimap and quest HUD are temporarily hidden while the system menu is displayed, and restored after closing it.
 
 ## Changing HUD mode manually
 
