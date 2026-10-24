@@ -44,6 +44,10 @@ pub fn install(module: &ModuleInfo, config: &Config) {
         encounter::install(module);
         hud::install(module, config.hud.aspect());
     }
+    // Poll the short menu-close grace on the GAME thread even while the
+    // player is completely motionless. The existing UMG callbacks remain
+    // the fallback if the frame probe cannot be installed.
+    install_menu_frame_tick(module, config);
     hook_shared_widget_updates(module, config);
     if config.movies.enable {
         movies::install(module);
@@ -59,6 +63,7 @@ fn hook_shared_widget_updates(module: &ModuleInfo, config: &Config) {
     let minimap_enabled = config.minimap.enable;
     let minimap_hint = config.minimap.name_hint.clone();
     let minimap_hint_rebuild = minimap_hint.clone();
+    let minimap_hint_visibility = minimap_hint.clone();
     // Native UpdateRenderTransform. RCX is the widget, and the fields it reads
     // -- Translation at +0x90, Scale at +0xA0 -- are both consumed immediately
     // after entry, so a movie's scale and a tooltip's translation are written
@@ -99,6 +104,11 @@ fn hook_shared_widget_updates(module: &ModuleInfo, config: &Config) {
         && inject_hook(module, &visibility, move |ctx| unsafe {
             let widget = ctx.rcx as *mut UWidget;
             let value = ESlateVisibility(ctx.rdx as u8);
+            if minimap_enabled {
+                // No per-widget trace: only monitor the two exact HUD classes.
+                minimap::on_widget_visibility(widget, true);
+                minimap::on_menu_visibility(widget, value, true, &minimap_hint_visibility);
+            }
             if movies {
                 movies::on_visibility(widget, value);
             }
@@ -140,5 +150,44 @@ fn hook_shared_widget_updates(module: &ModuleInfo, config: &Config) {
                 }
             }
         });
+    }
+}
+
+
+/// FEngineLoop::Tick's idle-mode preamble executes once per
+/// engine frame on the game thread (including while UI is open).
+///
+/// The signature is derived from PolarWizard's *existing* background idle
+/// patch. That patch has already run before this hook is installed, so its
+/// +6 conditional jump is EB in the enabled case, 74 in the disabled case.
+/// We hook at +0 (XOR SIL,SIL; CMP [RAX],R13D), before the jump. The first
+/// two complete instructions are six bytes, outside the +6 byte patch.
+///
+/// Requiring explicit opcodes rather than wildcarding these six bytes is
+/// intentional: if an updated game has different instructions, we FAIL
+/// CLOSED and fall back to the UMG callbacks rather than patch unknown code.
+fn install_menu_frame_tick(module: &ModuleInfo, config: &Config) {
+    if !config.minimap.enable
+        || config.minimap.name_hint.trim() != "WBP_MiniMapLayout_C"
+    {
+        return;
+    }
+    let signature = if config.background.enable {
+        "40 32 F6 44 39 28 EB ?? E8 ?? ?? ?? ?? 84 C0 75"
+    } else {
+        "40 32 F6 44 39 28 74 ?? E8 ?? ?? ?? ?? 84 C0 75"
+    };
+    let hook = SignatureHook {
+        tag: "Menu restore game-thread frame tick",
+        signature,
+        offset: 0,
+    };
+    let installed = inject_hook(module, &hook, move |_| {
+        minimap::on_game_thread_tick();
+    });
+    if installed {
+        log::info!("HUD_OPACITY_FRAME_HOOK installed=true");
+    } else {
+        log::warn!("HUD_OPACITY_FRAME_HOOK installed=false; retaining UMG fallback");
     }
 }

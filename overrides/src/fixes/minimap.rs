@@ -1,13 +1,14 @@
-//! v3.1 - small upper-right corner nudge for the ultrawide minimap.
+//! HYBRID minimap positioning and menu-safe HUD opacity restoration.
 //! Only the outer WBP_MiniMapLayout_C is affected; descendants follow it.
 //! Never change a new widget at 16:9. A previously shifted instance is
 //! restored to its original translation when a later callback sees 16:9.
 
-use std::{cell::RefCell, collections::{HashMap, HashSet}};
+use std::{cell::{Cell, RefCell}, collections::{HashMap, HashSet}, time::{Duration, Instant}};
 
 use sdk::{
-    CoreUObject::FVector2D,
-    UMG::{UUserWidget, UWidget, UWidgetLayoutLibrary},
+    CoreUObject::{FVector2D, UObject},
+    UMG::{ESlateVisibility, UUserWidget, UWidget, UWidgetLayoutLibrary},
+    rt::NameCache,
 };
 
 use super::{
@@ -16,6 +17,9 @@ use super::{
 };
 
 const MINIMAP_LAYOUT_CLASS: &str = "WBP_MiniMapLayout_C";
+// Deliberately small, diagnostic-only grace period after a menu collapses.
+// Prevents early minimap/quest reveal if another menu opens immediately.
+const MENU_CLOSE_GRACE: Duration = Duration::from_millis(160);
 const BASE_ASPECT: f64 = 16.0 / 9.0;
 // Additional space taken from the author's top-right screen margins.
 // Physical screen pixels; divided by DPI before writing UMG translations.
@@ -26,6 +30,13 @@ thread_local! {
     static REPORTED: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
     static ORIGINAL_X: RefCell<HashMap<String, OffsetState>> = RefCell::new(HashMap::new());
     static ORIGINAL_Y: RefCell<HashMap<String, OffsetState>> = RefCell::new(HashMap::new());
+    static MENU_ACTIVE: Cell<bool> = const { Cell::new(false) };
+    static MENU_CLOSE_PENDING: Cell<Option<Instant>> = const { Cell::new(None) };
+    static GAME_TICK_SEEN: Cell<bool> = const { Cell::new(false) };
+    // Store an object index and full identity instead of a stale raw pointer.
+    static ACTIVE_MINIMAP: RefCell<Option<(i32, String)>> = const { RefCell::new(None) };
+    static ACTIVE_QUEST: RefCell<Option<(i32, String)>> = const { RefCell::new(None) };
+    static MENU_OPACITY: RefCell<HashMap<String, f32>> = RefCell::new(HashMap::new());
 }
 
 /// Only trust a fresh viewport measurement. The SDK returns 1x1 if no world
@@ -72,12 +83,12 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
         if !(*widget).IsA(UUserWidget::StaticClass()) {
             return;
         }
-        let class = (&*(&(*widget)).Class).GetName();
-        if class != MINIMAP_LAYOUT_CLASS {
+        static MINIMAP_CLASS: NameCache = NameCache::new("WBP_MiniMapLayout_C");
+        if (&*(&(*widget)).Class).Name != MINIMAP_CLASS.get() {
             return;
         }
         let name = (*widget).GetName();
-        let id = format!("{}:{}:{}", class, name, (&(*widget)).Index);
+        let id = format!("{}:{}:{}", MINIMAP_LAYOUT_CLASS, name, (&(*widget)).Index);
         let phase = if rebuild { "rebuild" } else { "transform" };
         let Some((width, height, dpi)) = viewport_size_and_scale(widget) else {
             if probe {
@@ -90,7 +101,7 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
         };
         let ratio = width / height;
         // Tolerance also absorbs tiny rounding differences at exact 16:9.
-        // Wide screens: restore the root's 16:9 side gutter, then nudge the
+        // Wide screens outside a menu: restore the root's 16:9 side gutter, then nudge the
         // minimap nearer to the physical top-right edge. Exact 16:9 stays 0,0.
         let (shift_x, shift_y) = if ratio > BASE_ASPECT + 0.001 {
             (
@@ -116,7 +127,14 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
             return;
         }
 
-        // At 16:9, do not alter a newly created widget. An instance that
+        // Remember the confirmed live instance for immediate adjustment when
+        // Stack_System changes. GObjects is re-queried on every menu event.
+        let full_name = (*widget).GetFullName();
+        ACTIVE_MINIMAP.with_borrow_mut(|target| {
+            *target = Some(((&(*widget)).Index, full_name));
+        });
+
+        // At 16:9 or while a menu is active, do not alter a newly created widget. An instance that
         // was previously shifted can be restored in either axis instead.
         let current_x = (*widget).RenderTransform.Translation.X as f32;
         let current_y = (*widget).RenderTransform.Translation.Y as f32;
@@ -162,10 +180,198 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
 
 /// Called from the existing UWidget UpdateRenderTransform hook.
 pub(super) unsafe fn on_transform(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str) {
+    if enabled { unsafe { maybe_finish_menu_close(); } }
+    if enabled { unsafe { observe_quest(widget); } }
     unsafe { consider(widget, probe, enabled, hint, false) }
 }
 
 /// Called from the existing UUserWidget rebuild hook.
 pub(super) unsafe fn on_rebuild(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str) {
+    if enabled { unsafe { maybe_finish_menu_close(); } }
+    if enabled { unsafe { observe_quest(widget); } }
     unsafe { consider(widget, probe, enabled, hint, true) }
+}
+
+/// The system-menu visibility gate, called from the existing SetVisibility hook.
+/// Treat only Stack_System's displayed/collapsed transitions as menu changes.
+/// Never manipulate the stack itself or affect the original menu widgets.
+///
+/// We re-resolve the minimap by GObjects index and compare its full name,
+/// avoiding cached pointers across gameplay/world transitions.
+pub(super) unsafe fn on_menu_visibility(
+    widget: *mut UWidget,
+    requested: ESlateVisibility,
+    enabled: bool,
+    hint: &str,
+) {
+    if !enabled || hint.trim() != MINIMAP_LAYOUT_CLASS || !live(widget) {
+        return;
+    }
+    unsafe {
+        static STACK_CLASS: NameCache = NameCache::new("CPP_EU_ActivatableWidgetStack");
+        static STACK_NAME: NameCache = NameCache::new("Stack_System");
+        if (&*(&(*widget)).Class).Name != STACK_CLASS.get()
+            || (&(*widget)).Name != STACK_NAME.get()
+        {
+            return;
+        }
+    }
+    let active = if requested == ESlateVisibility::SelfHitTestInvisible
+        || requested == ESlateVisibility::Visible
+    {
+        true
+    } else if requested == ESlateVisibility::Collapsed
+        || requested == ESlateVisibility::Hidden
+    {
+        false
+    } else {
+        return;
+    };
+    if MENU_ACTIVE.replace(active) == active {
+        return;
+    }
+    log::info!("MINIMAP_MENU_GATE active={} stack=Stack_System", active);
+
+    if !active {
+        // Stack_System may disappear BEFORE its visual exit animation is
+        // finished; keep both overlays hidden until the grace interval.
+        MENU_CLOSE_PENDING.set(Some(Instant::now()));
+        log::info!("HUD_OPACITY_GRACE pending={}ms", MENU_CLOSE_GRACE.as_millis());
+        return;
+    }
+    // Reopening during a pending close cancels any deferred reveal.
+    MENU_CLOSE_PENDING.set(None);
+    unsafe { apply_known_menu_opacity(true); }
+}
+
+
+/// Observe the field quest objective overlay by its exact widget class.
+/// The quest widget follows the same menu opacity protection as the minimap.
+pub(super) unsafe fn on_widget_visibility(widget: *mut UWidget, enabled: bool) {
+    if enabled { unsafe { maybe_finish_menu_close(); } }
+    if !enabled { return; }
+    unsafe { observe_quest(widget); }
+}
+
+unsafe fn observe_quest(widget: *mut UWidget) {
+    if !live(widget) { return; }
+    static QUEST_CLASS: NameCache = NameCache::new("WBP_FieldQuestLayout_C");
+    if unsafe { (&*(&(*widget)).Class).Name } != QUEST_CLASS.get() { return; }
+    let full_name = unsafe { (*widget).GetFullName() };
+    let index = unsafe { (&(*widget)).Index };
+    let was_changed = ACTIVE_QUEST.with_borrow_mut(|entry| {
+        if entry.as_ref().is_some_and(|v| v.0 == index && v.1 == full_name) {
+            false
+        } else {
+            *entry = Some((index, full_name.clone()));
+            true
+        }
+    });
+    if was_changed {
+        let mut ancestry = Vec::new();
+        let mut cur = widget;
+        for _ in 0..10 {
+            let outer = outward(cur);
+            if !live(outer) { break; }
+            ancestry.push(unsafe { (&*(&(*outer)).Class).GetName() });
+            cur = outer;
+        }
+        log::info!("HUD_OPACITY_QUEST_TRACK index={} parents={:?}", index, ancestry);
+    }
+    if MENU_ACTIVE.get() {
+        unsafe { set_menu_opacity(widget, true, "field_quest"); }
+    }
+}
+
+/// Stores the original opacity on entry, restores it on exit. It never writes
+/// Visibility or relocates the widget, so the game's hit-testing/layout is
+/// unchanged. All operations run on the UMG game thread.
+unsafe fn set_menu_opacity(widget: *mut UWidget, menu_active: bool, label: &str) {
+    if !live(widget) { return; }
+    let key = unsafe { (*widget).GetFullName() };
+    let current = unsafe { (*widget).RenderOpacity };
+    if menu_active {
+        MENU_OPACITY.with_borrow_mut(|map| {
+            if !map.contains_key(&key) {
+                map.insert(key.clone(), current);
+            }
+        });
+        if current > 0.0001 {
+            unsafe { (*widget).SetRenderOpacity(0.0); }
+            log::info!("HUD_OPACITY_GUARD hide={} from={:.3}", label, current);
+        }
+    } else {
+        let baseline = MENU_OPACITY.with_borrow_mut(|map| map.remove(&key));
+        if let Some(opacity) = baseline {
+            // Avoid redundant setter calls.
+            if (current - opacity).abs() > 0.0001 {
+                unsafe { (*widget).SetRenderOpacity(opacity); }
+                log::info!("HUD_OPACITY_GUARD show={} to={:.3}", label, opacity);
+            }
+        }
+    }
+}
+
+/// Called by the game-thread FEngineLoop tick and by existing UMG hooks as
+/// fallback. No threads, sleeping, new timers or out-of-thread UMG writes.
+unsafe fn maybe_finish_menu_close() {
+    if MENU_ACTIVE.get() { return; }
+    let Some(closed_at) = MENU_CLOSE_PENDING.get() else { return; };
+    if closed_at.elapsed() < MENU_CLOSE_GRACE { return; }
+    MENU_CLOSE_PENDING.set(None);
+    unsafe { apply_known_menu_opacity(false); }
+    log::info!("HUD_OPACITY_GRACE elapsed={}ms restored=true", closed_at.elapsed().as_millis());
+}
+
+/// Independently validates cached minimap and quest identities. If the
+/// minimap has been collected, the quest overlay is still processed.
+unsafe fn apply_known_menu_opacity(active: bool) {
+    let target = ACTIVE_MINIMAP.with_borrow(|v| v.clone());
+    if let Some((index, full_name)) = target {
+        static MINIMAP_NAME: NameCache = NameCache::new("WBP_MiniMapLayout_C");
+        let object = UObject::GObjects.GetByIndex(index);
+        if live(object) && unsafe { (*object).GetFullName() } == full_name {
+            let minimap = object.cast::<UWidget>();
+            if unsafe { (*minimap).IsA(UUserWidget::StaticClass()) }
+                && unsafe { (&*(&(*minimap)).Class).Name } == MINIMAP_NAME.get()
+            {
+                unsafe { set_menu_opacity(minimap, active, "minimap"); }
+            } else {
+                ACTIVE_MINIMAP.with_borrow_mut(|v| *v = None);
+                log::info!("HUD_OPACITY_GUARD minimap=unexpected_class");
+            }
+        } else {
+            ACTIVE_MINIMAP.with_borrow_mut(|v| *v = None);
+            log::info!("HUD_OPACITY_GUARD minimap=stale");
+        }
+    } else {
+        log::info!("HUD_OPACITY_GUARD minimap=not_found");
+    }
+    let quest = ACTIVE_QUEST.with_borrow(|v| v.clone());
+    if let Some((index, full_name)) = quest {
+        let obj = UObject::GObjects.GetByIndex(index);
+        static QUEST_CLASS: NameCache = NameCache::new("WBP_FieldQuestLayout_C");
+        if live(obj) && unsafe { (*obj).GetFullName() } == full_name
+            && unsafe { (&*(&(*obj)).Class).Name } == QUEST_CLASS.get()
+        {
+            unsafe { set_menu_opacity(obj.cast(), active, "field_quest"); }
+        } else {
+            ACTIVE_QUEST.with_borrow_mut(|v| *v = None);
+            log::info!("HUD_OPACITY_GUARD quest=stale");
+        }
+    } else {
+        log::info!("HUD_OPACITY_GUARD quest=not_found");
+    }
+}
+
+
+/// Called once per engine frame from the pinned native game-thread signature.
+/// This is the SAME game thread the widget hooks use; no worker thread is
+/// allowed to touch UMG. Runs when stationary, paused or simply looking at
+/// the menu (as long as FEngineLoop continues to tick).
+pub(super) fn on_game_thread_tick() {
+    if !GAME_TICK_SEEN.replace(true) {
+        log::info!("HUD_OPACITY_FRAME_TICK first_tick=true");
+    }
+    unsafe { maybe_finish_menu_close(); }
 }

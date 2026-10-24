@@ -1,13 +1,32 @@
-RELEASE WORKFLOW (do not publish the test ZIP as a public release)
-1. Create a NEW GitHub repo under the account you choose.
-2. Upload the contents of this SOURCE STARTER to its root (no private backup ZIP).
-3. In Actions, run 'Build Windows candidate (not a release)'.
-4. Download the build artifact, inspect the metadata & test it in-game.
-5. Fill in Rust third-party licensing notices, verify loader version and static privacy audit.
-6. Once tested, replace the old anonymized ASI in the tested CLEAN RC package
-   with the fresh CI build, rename DLL->ASI, rebuild hash manifest, and
-   re-test BOTH installation methods and all HUD modes.
-7. Only then create a public GitHub release and a Nexus Mods file page.
+FFRS ULTRAWIDE ENHANCED — v1.0.1 PUBLICATION CHECKLIST
 
-WARNING: The old tested executable differs from a new clean rebuild.
-DO NOT treat CI compilation alone as validating the new runtime binary.
+Status: source and candidate package may be prepared ahead of Nexus review.
+
+GITHUB
+- Source overlay: https://github.com/DDejua/FFRS-Ultrawide-Enhanced
+- Review source changes and the successful Windows CI build for the 1.0.1 candidate.
+- Keep the original 1.0.0 source/history intact; use the v1.0.1 release notes.
+- The GitHub Actions artifact is build evidence and is NOT a replacement for an end-user ZIP.
+
+END-USER ZIP
+- Update the tested v1.0.0 ZIP by replacing ONLY the plugin ASI and versioned
+  installation/readme text; preserve the hash-verified official winmm.dll, TOML
+  HUD presets, installer scripts and third-party notices.
+- Recompute _support/SHA256.txt from the final files.
+- Audit ZIP safety/paths and test both manual and script installation.
+- Retest all three HUD presets in-game with that exact packaged ASI before
+  publishing. The package can be held as a release candidate meanwhile.
+
+NEXUS MODS
+- Existing mod page: https://www.nexusmods.com/finalfantasyresonance/mods/71
+- Support ticket: #273831, awaiting human response.
+- DO NOT delete quarantined v1.0.0 or upload a new file before receiving
+  support instructions about direct v1.0.1 review.
+- Once directed, upload v1.0.1 to the EXISTING mod page. Preserve version
+  history and link the GitHub source and MIT notices.
+- A newer version may be subject to separate security scanning or manual review.
+
+KNOWN ISSUE
+- Occasional Y/controller failure to reopen the system menu reproduced in
+  unmodded game; possible exacerbation in modded builds is not proven.
+- Keyboard ESC did not show the problem in the tester's run.

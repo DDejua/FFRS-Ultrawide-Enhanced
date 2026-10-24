@@ -2,7 +2,7 @@ name: Build Windows candidate (not a release)
 
 on:
   push:
-    branches: [main]
+    branches: [main, release/v1.0.1-prepared]
     paths:
       - '.github/workflows/build-windows-candidate.yml'
       - 'overrides/**'
