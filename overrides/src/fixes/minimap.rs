@@ -1,4 +1,4 @@
-//! v3.4 candidate - defer HUD reveal until menu transition settles (TEST ONLY).
+//! v3.5 candidate - frame-driven menu-close grace (TEST ONLY).
 //! Only the outer WBP_MiniMapLayout_C is affected; descendants follow it.
 //! Never change a new widget at 16:9. A previously shifted instance is
 //! restored to its original translation when a later callback sees 16:9.
@@ -32,6 +32,7 @@ thread_local! {
     static ORIGINAL_Y: RefCell<HashMap<String, OffsetState>> = RefCell::new(HashMap::new());
     static MENU_ACTIVE: Cell<bool> = const { Cell::new(false) };
     static MENU_CLOSE_PENDING: Cell<Option<Instant>> = const { Cell::new(None) };
+    static GAME_TICK_SEEN: Cell<bool> = const { Cell::new(false) };
     // Store an object index and full identity instead of a stale raw pointer.
     static ACTIVE_MINIMAP: RefCell<Option<(i32, String)>> = const { RefCell::new(None) };
     static ACTIVE_QUEST: RefCell<Option<(i32, String)>> = const { RefCell::new(None) };
@@ -310,9 +311,8 @@ unsafe fn set_menu_opacity(widget: *mut UWidget, menu_active: bool, label: &str)
     }
 }
 
-/// Called only by an existing UMG hook. Do not block or sleep on the game
-/// thread. If no UMG callback occurs, the opacity may remain suppressed:
-/// this test is intentionally NOT eligible for publication without QA.
+/// Called by the game-thread FEngineLoop tick and by existing UMG hooks as
+/// fallback. No threads, sleeping, new timers or out-of-thread UMG writes.
 unsafe fn maybe_finish_menu_close(probe: bool) {
     if MENU_ACTIVE.get() { return; }
     let Some(closed_at) = MENU_CLOSE_PENDING.get() else { return; };
@@ -360,4 +360,16 @@ unsafe fn apply_known_menu_opacity(active: bool, probe: bool) {
     } else {
         log::info!("HUD_OPACITY_GUARD quest=not_found");
     }
+}
+
+
+/// EXPERIMENTAL: Called once per engine frame from a pinned native signature.
+/// This is the SAME game thread the widget hooks use; no worker thread is
+/// allowed to touch UMG. Runs when stationary, paused or simply looking at
+/// the menu (as long as FEngineLoop continues to tick).
+pub(super) fn on_game_thread_tick(probe: bool) {
+    if !GAME_TICK_SEEN.replace(true) {
+        log::info!("HUD_OPACITY_FRAME_TICK first_tick=true");
+    }
+    unsafe { maybe_finish_menu_close(probe); }
 }
