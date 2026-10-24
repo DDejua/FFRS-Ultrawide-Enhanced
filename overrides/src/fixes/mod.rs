@@ -173,9 +173,10 @@ fn hook_shared_widget_updates(module: &ModuleInfo, config: &Config) {
             let value = ESlateVisibility(ctx.rdx as u8);
             if minimap_probe {
                 diagnose_menu_visibility(widget, value);
+                minimap::on_widget_visibility(widget, minimap_probe, minimap_enabled);
             }
             if minimap_enabled {
-                minimap::on_menu_visibility(widget, value, minimap_enabled, &minimap_hint_visibility);
+                minimap::on_menu_visibility(widget, value, minimap_enabled, &minimap_hint_visibility, minimap_probe);
             }
             if movies {
                 movies::on_visibility(widget, value);
