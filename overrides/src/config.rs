@@ -11,6 +11,8 @@ pub struct Config {
     pub super_enable: bool,
     /// Diagnostic only: keep the game's original axis constraint on ultrawide.
     pub dof_test_original_axis: bool,
+    /// Diagnostic only: force horizontal FOV for an orthogonal camera test.
+    pub dof_test_force_x_axis: bool,
     pub hud: Hud,
     pub minimap: Minimap,
     pub movies: Movies,
@@ -114,6 +116,7 @@ impl Default for Config {
         Self {
             super_enable: true,
             dof_test_original_axis: false,
+            dof_test_force_x_axis: false,
             hud: Hud::default(),
             minimap: Minimap::default(),
             movies: Movies::default(),
