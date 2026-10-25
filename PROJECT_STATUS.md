@@ -4,6 +4,17 @@
 
 The [GitHub repository](https://github.com/DDejua/FFRS-Ultrawide-Enhanced) is the single source of truth. **Chat history, local ZIP filenames and unpublished builds are not authoritative.** Every chat and contributor must read this dashboard and [the development workflow](docs/DEVELOPMENT_WORKFLOW.md) before modifying code or preparing a binary.
 
+## Latest development candidate (2026-10-25)
+
+**[PR #18 — v1.0.2 combined, review-only](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/18)** from `develop` builds a manual-install-only candidate containing the Issue #4 encounter state guard and Issue #5 default-on resolution-aware DOF. **Not merged to develop/main, not uploaded to Nexus, runtime verification of the newly built ASI is pending.**
+
+- User reports **multiple hours without a repeat game crash** when using the combined V5 test ASI, including map, interior and city tests; no reason to declare the new PR #18 binary runtime-stable without testing.
+- DOF 3440x1440 / 43:18 optical scale **1.50x** was calibrated against original 16:9 and visually tested in movement, indoors and city.
+- Other aspect ratios use a bounded *mathematically exact two-anchor model*, but predictions for **32:9 or higher are unverified**. The model and caveats are documented in [DOF_AUTO_FORMULA.md](docs/DOF_AUTO_FORMULA.md).
+- Settings `[post_processing] depth_of_field=true`, `ultrawide_dof_fix=true` (both default on); complete effect opt-out via `depth_of_field=false` and compensation-only opt-out via `ultrawide_dof_fix=false`.
+- No experimental V3/V4/V5 axis flags or manual sensor values included in the clean PR #18 code. Issue #4 encounter source matches tested blob exactly.
+- **Nexus archive must contain zero .cmd/.ps1/.bat files.** Only copy the game plugin `scripts/` files manually, retain official loader provenance; source-repo build scripts are developer-only.
+
 ## Current release — stable
 
 | Item | State |
