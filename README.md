@@ -6,7 +6,7 @@
 
 ### Development status across multiple conversations
 
-**[PROJECT STATUS — read this first](PROJECT_STATUS.md)** · [Branching and integration workflow](docs/DEVELOPMENT_WORKFLOW.md) · [Test matrix and binary provenance](docs/TEST_MATRIX.md) · [Open Issues](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues) · [Pull requests](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pulls)
+**[PROJECT STATUS — read this first](PROJECT_STATUS.md)** · [Branching and integration workflow](docs/DEVELOPMENT_WORKFLOW.md) · **[Enable branch protection (owner setup)](docs/BRANCH_PROTECTION_SETUP.md)** · [Test matrix and binary provenance](docs/TEST_MATRIX.md) · [Open Issues](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues) · [Pull requests](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pulls)
 
 Stable released source is `main`; the next combined version is integrated on `develop`. Each crash/DOF/other experiment needs an Issue, isolated branch, PR and recorded tests. **Do not merge a passing experimental build or upload its ASI to Nexus without testing the combined release.**
 
