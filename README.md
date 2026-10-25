@@ -4,6 +4,12 @@
 
 **[Download v1.0.1 on Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/71?tab=files)** · [Manual installation instructions](INSTALLATION.md) · [Changelog](CHANGELOG.md)
 
+### Development status across multiple conversations
+
+**[PROJECT STATUS — read this first](PROJECT_STATUS.md)** · [Branching and integration workflow](docs/DEVELOPMENT_WORKFLOW.md) · [Test matrix and binary provenance](docs/TEST_MATRIX.md) · [Open Issues](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues) · [Pull requests](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pulls)
+
+Stable released source is `main`; the next combined version is integrated on `develop`. Each crash/DOF/other experiment needs an Issue, isolated branch, PR and recorded tests. **Do not merge a passing experimental build or upload its ASI to Nexus without testing the combined release.**
+
 The **published player-facing ZIP is manual-install only**: it contains `winmm.dll`, `scripts/final_fantasy_resonance_fix.asi`, the default `scripts/final_fantasy_resonance_fix.toml`, three `HUD_PRESETS`, `README.txt`, license notices, and support hashes/build information. **It contains no `.cmd` or `.ps1` installers.** No Vortex or automatic installation is claimed.
 
 > **Source vs download:** PowerShell files in this *source repository's* `scripts/` directory prepare builds and run security/license audits. They are **developer build tools only** and are **not included in the public Nexus archive**, which installs by manual file copying.
