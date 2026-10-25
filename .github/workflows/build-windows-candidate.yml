@@ -8,13 +8,10 @@ on:
       - 'overrides/**'
       - 'scripts/**'
       - 'Cargo.lock.reference'
+  # Run even for docs-only PRs so windows-build is always a valid,
+  # enforceable required status check in a main/develop Ruleset.
   pull_request:
     branches: [main, develop]
-    paths:
-      - '.github/workflows/build-windows-candidate.yml'
-      - 'overrides/**'
-      - 'scripts/**'
-      - 'Cargo.lock.reference'
   workflow_dispatch:
 
 permissions:

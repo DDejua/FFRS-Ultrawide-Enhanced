@@ -1,0 +1,76 @@
+name: Integration guard
+
+# Never treat a feature ZIP or old experimental branch as the new baseline.
+# GitHub Rulesets should require this check plus windows-build for main/develop.
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, reopened, synchronize, ready_for_review, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-cumulative-pr:
+    name: verify-cumulative-pr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact PR head and fetch history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify cumulative ancestry and release branch
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          TARGET_SHA: ${{ github.event.pull_request.base.sha }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
+        run: |
+          set -euo pipefail
+          echo "Checking PR ${SOURCE_BRANCH} -> ${TARGET_BRANCH}"
+          git fetch --no-tags origin main develop
+          git cat-file -e "${TARGET_SHA}^{commit}"
+          git cat-file -e "${SOURCE_SHA}^{commit}"
+
+          # Avoid a PR from stale develop, or a workstream based on a different
+          # test branch. All changes must include their target's prior commits.
+          if ! git merge-base --is-ancestor "${TARGET_SHA}" "${SOURCE_SHA}"; then
+            echo "::error::PR head does not contain the current target baseline. Update your branch from ${TARGET_BRANCH} without discarding your commits, push and retest."
+            exit 1
+          fi
+
+          # Distinguish actual runtime/build/CI changes from docs-only PRs.
+          runtime_change=false
+          while IFS= read -r changed; do
+            case "${changed}" in
+              overrides/*|scripts/*|Cargo.lock.reference|.github/workflows/*)
+                runtime_change=true
+                ;;
+            esac
+          done < <(git diff --name-only "${TARGET_SHA}" "${SOURCE_SHA}")
+
+          # All code & CI changes reach published main ONLY via develop.
+          # A docs-only hotfix can target main independently.
+          if [[ "${TARGET_BRANCH}" == "main" && "${runtime_change}" == true ]]; then
+            if [[ "${SOURCE_BRANCH}" != "develop" || "${SOURCE_REPO}" != "${BASE_REPO}" ]]; then
+              echo "::error::Runtime/CI changes may enter main only from this repo's develop branch. Merge and test your independent fix in develop first."
+              exit 1
+            fi
+          fi
+
+          # Accidental deletion of a fix module can erase previous work.
+          deleted="$(git diff --name-only --diff-filter=D "${TARGET_SHA}" "${SOURCE_SHA}" -- overrides/src/fixes)"
+          if [[ -n "${deleted}" ]]; then
+            echo "::error::A fix module was deleted: ${deleted}. Refactor via an explicit reviewed migration, do not silently drop fixes."
+            exit 1
+          fi
+
+          echo "PASS: current target commits are preserved in the candidate."
+          echo "PASS: runtime changes follow develop -> main."
+          echo "PASS: no fix module was deleted."
+          echo "NOTE: semantic regressions still require source review and a combined in-game test."
