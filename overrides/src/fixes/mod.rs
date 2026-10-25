@@ -31,7 +31,7 @@ use crate::{
 /// Applies every fix the config enables.
 pub fn install(module: &ModuleInfo, config: &Config) {
     fonts::install(module, &config.fonts);
-    aspect_ratio::apply(module);
+    aspect_ratio::apply(module, config.dof_test_original_axis, config.dof_test_force_x_axis);
     if config.background.enable {
         background::apply(module);
     }
