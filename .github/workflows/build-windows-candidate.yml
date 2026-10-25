@@ -1,8 +1,15 @@
-name: Build Windows candidate (not a release)
+name: Build Windows candidate / PR validation (not a release)
 
 on:
   push:
-    branches: [main, release/v1.0.1-prepared]
+    branches: [main, develop]
+    paths:
+      - '.github/workflows/build-windows-candidate.yml'
+      - 'overrides/**'
+      - 'scripts/**'
+      - 'Cargo.lock.reference'
+  pull_request:
+    branches: [main, develop]
     paths:
       - '.github/workflows/build-windows-candidate.yml'
       - 'overrides/**'
