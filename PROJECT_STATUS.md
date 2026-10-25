@@ -32,6 +32,8 @@ Existing pre-workflow branches were created off `main` before the `develop` poli
 
 ## Workstreams in progress
 
+**Next combined release tracker:** [Issue #7 — integration and publication gates](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/7). This is the checklist for combining independently tested branches into one release.
+
 | Workstream | Tracking | Branch / build | State | Next evidence |
 | --- | --- | --- | --- | --- |
 | Castle exploration crash, memory access violation `0xC0000005` | [Issue #4](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/4) | [`test/encounter-pending-reset-v102`](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/tree/test/encounter-pending-reset-v102), [Windows CI #40168924552](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/actions/runs/40168924552) | **COMPILED, GAME TEST NOT CONFIRMED. NOT MERGED / NOT RELEASED.** | Check encounter/cinematic behavior and extended castle exploration. If passed, rebase/reapply patch onto fresh `develop` branch and PR. |
