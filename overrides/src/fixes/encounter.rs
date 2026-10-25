@@ -207,6 +207,12 @@ pub(super) unsafe fn reframe_capture(widget: *mut UWidget) {
     // than the capture, where there is nothing to trim.
     let keep = (captured_aspect() * viewport.Y / viewport.X).min(1.0);
     if approximately(keep, 1.0) {
+        // The native capture already matches the viewport. Consume this
+        // request even if no crop was needed. Otherwise PENDING can outlive
+        // the capture and a later unrelated Image_44 can attempt to draw
+        // from a stale render target during exploration.
+        PENDING.set(false);
+        log::info!("Encounter capture: already matched viewport, pending consumed");
         return;
     }
     let bounce = bounce_target(context, target);

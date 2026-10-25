@@ -19,7 +19,9 @@ foreach ($source in $all) {
     $target = Join-Path $destination $relative
     if (!(Test-Path -LiteralPath $target -PathType Leaf) -and
         $relative -ne 'src\fixes\minimap.rs' -and
-        $relative -ne 'src/fixes/minimap.rs') {
+        $relative -ne 'src/fixes/minimap.rs' -and
+        $relative -ne 'src\fixes\dof_aspect.rs' -and
+        $relative -ne 'src/fixes/dof_aspect.rs') {
         throw "Expected upstream file missing: $relative"
     }
     $targetFolder = Split-Path -Parent $target

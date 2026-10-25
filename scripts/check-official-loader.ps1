@@ -25,6 +25,10 @@ $dllHash = (Get-FileHash -LiteralPath $dll[0].FullName -Algorithm SHA256).Hash.T
 if ($dllHash -ne $ExpectedDllSha256.ToLowerInvariant()) {
   throw "User-tested bundled winmm.dll does not match this official asset. Actual: $dllHash"
 }
+# Retain ONLY the exact digest-verified official loader in the Windows
+# developer artifact. The release ZIP is assembled manually after regression;
+# no installer command/script is ever included in a player archive.
+Copy-Item -LiteralPath $dll[0].FullName -Destination (Join-Path $dest 'winmm.dll') -Force
 $report = @(
   'Ultimate ASI Loader official binary provenance'
   "Official URL: $uri"
