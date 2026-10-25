@@ -15,6 +15,7 @@ use crate::{
 
 pub(super) fn install(module: &ModuleInfo, config: PostProcessing) {
     if !config.dof_probe
+        && (config.dof_test_sensor_width_scale - 1.0).abs() < f32::EPSILON
         && config.motion_blur
         && config.depth_of_field
         && config.bloom
@@ -46,6 +47,21 @@ pub(super) fn install(module: &ModuleInfo, config: PostProcessing) {
     // Flag defaults to false; production config with all effects true
     // returns above without installing this hook.
     let sampled_views = AtomicU64::new(0);
+    // Rejected scales change nothing (rather than ever writing NaN/Inf).
+    let sensor_scale = config.dof_test_sensor_width_scale;
+    let sensor_test_active = sensor_scale.is_finite()
+        && (0.5..=2.0).contains(&sensor_scale)
+        && (sensor_scale - 1.0).abs() > f32::EPSILON;
+    if sensor_scale != 1.0 {
+        if sensor_test_active {
+            log::warn!(
+                "DOF_SENSOR_TEST active=true scale={} (TEST ONLY; 0<distance<=10000)",
+                sensor_scale
+            );
+        } else {
+            log::warn!("DOF_SENSOR_TEST invalid scale={} - no sensor edits", sensor_scale);
+        }
+    }
     inject_hook(module, &hook, move |ctx| {
         let settings = (ctx.rbx as usize + 0x1320) as *mut FPostProcessSettings;
         let post = unsafe { &mut *settings };
@@ -66,6 +82,27 @@ pub(super) fn install(module: &ModuleInfo, config: PostProcessing) {
                     post.DepthOfFieldScale,
                     post.DepthOfFieldDepthBlurAmount,
                     post.DepthOfFieldDepthBlurRadius,
+                );
+            }
+        }
+        // Only gameplay-sized focal distances: avoids changing boot/title views
+        // with 100000 cm focus and the unloaded 0 cm views. Does not touch
+        // camera FOV, projection, focal distance, aperture, HUD or movies.
+        if sensor_test_active
+            && config.depth_of_field
+            && post.DepthOfFieldFocalDistance > 0.0
+            && post.DepthOfFieldFocalDistance <= 10000.0
+            && post.DepthOfFieldSensorWidth.is_finite()
+            && post.DepthOfFieldSensorWidth >= 0.1
+        {
+            let old = post.DepthOfFieldSensorWidth;
+            let new = (old * sensor_scale).clamp(0.1, 1000.0);
+            post.DepthOfFieldSensorWidth = new;
+            let n = sampled_views.load(Ordering::Relaxed);
+            if n == 1 || n % 600 == 0 {
+                log::warn!(
+                    "DOF_SENSOR_TEST value old={} new={} focus_distance={}",
+                    old, new, post.DepthOfFieldFocalDistance
                 );
             }
         }
