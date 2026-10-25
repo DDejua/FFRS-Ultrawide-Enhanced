@@ -1,29 +1,29 @@
-# FINAL FANTASY RESONANCE — Ultrawide Hybrid Fix
+# FINAL FANTASY RESONANCE — Ultrawide Fix + DOF
 
-**v1.0.1 is publicly downloadable on Nexus Mods.** This repository contains the community source modifications and Windows build workflow for the mod.
+**v1.1.0 was published on Nexus Mods on 2026-10-25.** This repository contains the versioned source overlay and Windows build workflow for the mod.
 
-**[Download v1.0.1 on Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/71?tab=files)** · [Manual installation instructions](INSTALLATION.md) · [Changelog](CHANGELOG.md)
+**[Download v1.1.0 on Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/71?tab=files)** · [Manual installation instructions](INSTALLATION.md) · [Changelog](CHANGELOG.md)
 
 ### Development status across multiple conversations
 
 **[PROJECT STATUS — read this first](PROJECT_STATUS.md)** · [Branching and integration workflow](docs/DEVELOPMENT_WORKFLOW.md) · **[Active branch protection ruleset](docs/BRANCH_PROTECTION_SETUP.md)** · [Test matrix and binary provenance](docs/TEST_MATRIX.md) · [Open Issues](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues) · [Pull requests](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pulls)
 
-Stable released source is `main`; the next combined version is integrated on `develop`. Each crash/DOF/other experiment needs an Issue, isolated branch, PR and recorded tests. **Do not merge a passing experimental build or upload its ASI to Nexus without testing the combined release.**
+Stable released source is `main`; new work is integrated through `develop` with review and game tests. Issues and release PRs record provenance; CI passing alone is not sufficient to publish an untested gameplay build.
 
 The **published player-facing ZIP is manual-install only**: it contains `winmm.dll`, `scripts/final_fantasy_resonance_fix.asi`, the default `scripts/final_fantasy_resonance_fix.toml`, three `HUD_PRESETS`, `README.txt`, license notices, and support hashes/build information. **It contains no `.cmd` or `.ps1` installers.** No Vortex or automatic installation is claimed.
 
 > **Source vs download:** PowerShell files in this *source repository's* `scripts/` directory prepare builds and run security/license audits. They are **developer build tools only** and are **not included in the public Nexus archive**, which installs by manual file copying.
 
-## Unreleased v1.0.2 candidate — DOF + stability (NOT on Nexus)
+## What's new in v1.1.0 — automatic DOF + stability
 
-[Draft combined PR #18](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/18) includes the tested encounter pending reset and automatic DOF compensation. This code is **pending in-game regression** and is not a stable public release. [Technical formula, calibration and limitations](docs/DOF_AUTO_FORMULA.md).
+The combined source from [PR #18](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/18) implements the encounter capture pending-state correction and a default-enabled resolution-aware DOF sensor compensation. The author tested and approved the exact public ASI at 3440×1440. [Optical model and limitations](docs/DOF_AUTO_FORMULA.md) · [Version changelog](CHANGELOG.md).
 
 - `[post_processing] depth_of_field=true` retains DOF (default).
 - `[post_processing] ultrawide_dof_fix=true` enables aspect-ratio-aware compensation (default).
 - `depth_of_field=false` removes DOF completely, including ultrawide compensation.
 - `ultrawide_dof_fix=false` disables *only* extra compensation, retaining original game DOF.
 - User-tested at 3440×1440 (1.50×) including map, town and interiors; **32:9 and larger predictions are currently theoretical**.
-- Normal player archives remain **manual copy only**, zero `.cmd`, `.ps1` or `.bat` included.
+- The published player archive is **manual copy only**, with zero `.cmd`, `.ps1` or `.bat` installers. The *source* repository's PowerShell build scripts are developer-only.
 
 ## HUD modes
 
@@ -36,6 +36,7 @@ The selected preset is a TOML configuration. Close the game and copy a different
 ## Changes and fix provenance
 
 - Extends the 0.3.0 [PolarWizard FINAL FANTASY RESONANCE Fix](https://github.com/PolarWizard/final-fantasy-resonance-fix), pinned to `0f5bc2c4bab2b1680c59d8d1c2135253ae14c0df`, with resolution-aware independent positioning of `WBP_MiniMapLayout_C`.
+- **v1.1.0:** adds default-on automatic DOF compensation and consumes the encounter pending state on an already-matching transition capture, addressing an intermittent crash. The 21:9 DOF behavior was compared to 16:9 and tested in the map, town and interiors. Larger formats need community validation.
 - **v1.0.1 menu fix:** hides the independently positioned minimap and field quest/objective widget while centered system/mission menus are displayed. Original positions are preserved instead of visibly teleporting the minimap. Restores their opacity after approximately 160 ms, via a native game-thread frame callback even while idle, and cancels restoration if another menu opens.
 - Preserves the original PolarWizard 16:9, 21:9 and 32:9 HUD root settings and related cinematic/UI corrections.
 - Includes the battle transition scratch render-target lifetime correction from [Darjjj's upstream PR #3](https://github.com/PolarWizard/final-fantasy-resonance-fix/pull/3); this is credited third-party work.
@@ -59,7 +60,7 @@ GitHub Actions runs a Windows source build, dependency license collection, offic
 
 ## Testing and limitations
 
-- The author reports Windows Steam testing at **3440 × 1440** of the three modes, battle transitions and 16:9 streaming during development. The HYBRID menu hide/restore behavior was tested in-game in v1.0.1.
+- At **3440 × 1440** on Windows Steam, the author tested the 1.50× DOF calibration in movement, interiors, town and world map, and reported several hours without recurrence of the earlier crash; the combined v1.1.0 release archive was explicitly approved for publication. This does not guarantee crash-free operation on every system.
 - The controller **Y** button may occasionally fail to reopen a system menu on the first press. This also happens in the **unmodded** game, although some experimental modded runs seemed to have it more frequently; that difference has not been explained. Keyboard ESC did not exhibit it in the same tests. This mod does not hook gamepad input.
 - Other aspect ratios, 32:9, different game builds and future updates have not been fully validated. Native hooks may break following game updates.
 - On 16:9, upstream/native hooks may still be installed even if ultrawide offset is zero.
@@ -69,6 +70,6 @@ GitHub Actions runs a Windows source build, dependency license collection, offic
 - **PolarWizard / Dominik Protasewicz** — original fix, MIT.
 - **Darjjj** — battle transition scratch-target correction ([upstream PR #3](https://github.com/PolarWizard/final-fantasy-resonance-fix/pull/3)).
 - **ThirteenAG** — [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader), MIT (distributed in the Nexus ZIP, not in the source overlay).
-- **Community extension** — minimap HUD positioning, menu transitions, preset packaging and documentation.
+- **RimuModding community extension** — minimap/HUD positioning, menu transitions, optical DOF compensation, crash-guard integration, manual preset packaging and documentation.
 
 Applicable notices are in `LICENSES/`, the Nexus ZIP and [THIRD_PARTY_DEPENDENCIES.md](THIRD_PARTY_DEPENDENCIES.md). This is an unofficial community project, unaffiliated with Square Enix, other rights holders or the original authors. Development included AI-assisted source and documentation.
