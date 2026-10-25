@@ -44,8 +44,10 @@ Existing pre-workflow branches were created off `main` before the `develop` poli
 
 - [x] `Integration guard` workflow prepared: PR ancestry, `develop` → `main` release gate and fix-module deletion detection.
 - [x] Windows build configured to run on all PRs into `main` or `develop` for mandatory CI checks.
-- [ ] **REQUIRES OWNER ACTION:** enable a GitHub Ruleset targeting `main` and `develop` with mandatory PRs and checks `verify-cumulative-pr` plus `windows-build`. The connected GitHub application cannot change administrative rulesets. [Click-by-click setup](docs/BRANCH_PROTECTION_SETUP.md).
-- [ ] Verify after activation that direct pushes and force pushes are blocked and a stale PR cannot merge. **Until then, direct pushes are technically possible**, despite our written policy.
+- [x] **OWNER ACTIVATED RULESET on 2026-10-25:** [FFRS - Protect main and develop (ID 25813463)](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/settings/rules/25813463) was independently verified via GitHub Rulesets REST GET. `enforcement=active`; target refs exactly `main` and `develop`; empty bypass list; required PR with 0 reviewers; deletion/force-push restrictions; mandatory GitHub Actions checks `verify-cumulative-pr` and `windows-build`; strict up-to-date policy.
+- [x] GitHub branch GET reports `protected=true` for both `main` and `develop`. The generic branch-protection subfield is not authoritative for Rulesets; the Ruleset endpoint confirms enforcement.
+- [ ] **Optional adversarial confirmation:** create a deliberately stale PR to validate it is blocked by `verify-cumulative-pr` (never merge this test). No direct-push or force-push attempt has been performed, to avoid altering stable history.
+- [ ] No automatic guarantee of bug-free cumulative *behavior*: changes to existing code can still regress older fixes, so the combined release must be tested in-game.
 
 ## Hard requirements for a patch to count as integrated
 
