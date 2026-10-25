@@ -1,6 +1,6 @@
 # Enable mandatory GitHub branch protection — FFRS
 
-> **Action required by the repository administrator.** The currently connected GitHub application can edit repository files and PRs but **does not have GitHub Administration permission to create Rulesets or branch protection settings**. The automation below is committed to this repository; the ruleset must be enabled once in the GitHub UI to make the checks mandatory.
+> **STATUS: ACTIVE (2026-10-25).** The repository owner created [GitHub Ruleset #25813463](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/settings/rules/25813463), named `FFRS - Protect main and develop`. Verified from GitHub REST: targets `main` and `develop`, empty bypass, PR required (0 approvals), prevent deletions/force pushes, strict checks `verify-cumulative-pr` and `windows-build`. The steps below are kept for future verification/recreation. The connected GitHub application cannot administer Rulesets directly.
 
 ## Goal: fixes accumulate, never replace
 
