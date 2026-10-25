@@ -1,6 +1,6 @@
-# Resolution-aware depth of field — v1.0.2 candidate (Issues #4 / #5)
+# Resolution-aware depth of field — v1.1.0 release (Issues #4 / #5)
 
-**Status:** experimental integrated candidate. NOT published, NOT tested on 32:9.
+**Status:** published in v1.1.0 on Nexus Mods (2026-10-25), game-tested at 3440×1440. **32:9 and wider still lack real-hardware validation.**
 
 ## User settings
 
@@ -44,7 +44,7 @@ This is a mathematically exact *power-law interpolation through the two known po
 | 32:9 | 5120x1440, 7680x2160 | ~2.58883 | Prediction, not tested |
 | 48:9 | 7680x1440 | 4.0 bounded | Extrapolation clamped, untested |
 
-The `S(A)` value scales *only* the already-blended `FPostProcessSettings.DepthOfFieldSensorWidth` for eligible gameplay views with finite sensor width and `0 < DepthOfFieldFocalDistance <= 10000`. Out-of-range focus values retain the game's original DOF. The user-tested V5 candidate had this same focus guard; it may not cover every cinematic camera. No FOV, aspect constraint, filmback projection, focus distance or f-stop patch is added.
+The `S(A)` value scales *only* the already-blended `FPostProcessSettings.DepthOfFieldSensorWidth` for eligible gameplay views with finite sensor width and `0 < DepthOfFieldFocalDistance <= 10000`. Out-of-range focus values retain the game's original DOF. The earlier user-tested V5 candidate had this same focus guard; v1.1.0 preserves it. It may not cover every cinematic camera. No FOV, aspect constraint, filmback projection, focus distance or f-stop patch is added.
 
 ## Aspect measurement
 
@@ -54,8 +54,8 @@ The original HUD root's `UWidgetLayoutLibrary::GetViewportSize` divided by viewp
 
 ## Crash guard and rollback
 
-The `PENDING.set(false)` no-crop consume branch from prior user-tested Issue #4 ASI is copied verbatim. CI compilation alone does **not** validate the rebuilt binary's runtime stability. Preserve a backup of prior ASI/TOML and do a multi-hour combined crash, menu, battle and cinema regression. If an issue appears, revert the candidate archive; do not blame the DOF sensor model without controlled A/B tests.
+The `PENDING.set(false)` no-crop consume branch from the earlier user-tested Issue #4 ASI is preserved verbatim in the released v1.1.0 source. The author reported multiple hours without the previous crash and approved the combined v1.1.0 binary; this does **not** prove universal stability. Preserve backups when upgrading; if a new issue appears, report the scene, resolution, HUD mode and log, and compare against the previous approved ASI.
 
 ## Manual install distribution only
 
-Candidate ZIP must contain no `.cmd`, `.bat`, `.ps1` files and no scripts to execute. `scripts/` is the game's **normal ASI plugin directory**, not a folder of runnable installers. Users only copy ASI and TOML. Developer-only source repository build scripts never ship in the player ZIP.
+The published v1.1.0 ZIP contains no `.cmd`, `.bat`, `.ps1` executable installers. `scripts/` is the game's **normal ASI plugin directory**, not a folder of runnable installers. Users only copy ASI and TOML. Developer-only source repository build scripts never ship in the player ZIP.
