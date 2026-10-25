@@ -9,6 +9,8 @@ use windows::Win32::System::LibraryLoader::GetModuleFileNameW;
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub super_enable: bool,
+    /// Diagnostic only: keep the game's original axis constraint on ultrawide.
+    pub dof_test_original_axis: bool,
     pub hud: Hud,
     pub minimap: Minimap,
     pub movies: Movies,
@@ -111,6 +113,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             super_enable: true,
+            dof_test_original_axis: false,
             hud: Hud::default(),
             minimap: Minimap::default(),
             movies: Movies::default(),
