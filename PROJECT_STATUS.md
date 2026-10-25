@@ -40,6 +40,13 @@ Existing pre-workflow branches were created off `main` before the `develop` poli
 | Depth of field / ultrawide postprocessing | [Issue #5](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/5) | No code branch or candidate confirmed | **RESEARCH ONLY; NO PATCH YET** | Reproduce and characterize DOF before proposing fix. |
 | Input Y requiring repeated press | Tracked as known limitation in README; may become issue if actionable | No active fix | **UNMODDED REPRODUCTION CONFIRMED; NOT SOLVED** | Record a consistent repro and isolate native vs modded frequency if needed. |
 
+## Branch protection enforcement status
+
+- [x] `Integration guard` workflow prepared: PR ancestry, `develop` → `main` release gate and fix-module deletion detection.
+- [x] Windows build configured to run on all PRs into `main` or `develop` for mandatory CI checks.
+- [ ] **REQUIRES OWNER ACTION:** enable a GitHub Ruleset targeting `main` and `develop` with mandatory PRs and checks `verify-cumulative-pr` plus `windows-build`. The connected GitHub application cannot change administrative rulesets. [Click-by-click setup](docs/BRANCH_PROTECTION_SETUP.md).
+- [ ] Verify after activation that direct pushes and force pushes are blocked and a stale PR cannot merge. **Until then, direct pushes are technically possible**, despite our written policy.
+
 ## Hard requirements for a patch to count as integrated
 
 1. A **GitHub Issue** explains the bug/feature, observations, reproduction, evidence and acceptance criteria.
