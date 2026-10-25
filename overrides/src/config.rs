@@ -68,6 +68,9 @@ pub struct Background {
 pub struct PostProcessing {
     pub motion_blur: bool,
     pub depth_of_field: bool,
+    /// On by default: automatically compensate optical DOF on screens wider than 16:9.
+    /// Set false to retain unmodified game DOF while keeping other mod fixes.
+    pub ultrawide_dof_fix: bool,
     pub bloom: bool,
     pub film_grain: bool,
     pub chromatic_aberration: bool,
@@ -79,6 +82,7 @@ impl Default for PostProcessing {
         Self {
             motion_blur: true,
             depth_of_field: true,
+            ultrawide_dof_fix: true,
             bloom: true,
             film_grain: true,
             chromatic_aberration: true,
