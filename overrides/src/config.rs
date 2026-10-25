@@ -74,6 +74,9 @@ pub struct PostProcessing {
     pub depth_of_field: bool,
     /// Opt-in diagnostic logging; never changes DOF settings or render state.
     pub dof_probe: bool,
+    /// TEST ONLY: multiplication of the engine's sensor width during gameplay DOF.
+    /// 1.0 preserves exact original render behavior; never auto scales with aspect.
+    pub dof_test_sensor_width_scale: f32,
     pub bloom: bool,
     pub film_grain: bool,
     pub chromatic_aberration: bool,
@@ -86,6 +89,7 @@ impl Default for PostProcessing {
             motion_blur: true,
             depth_of_field: true,
             dof_probe: false,
+            dof_test_sensor_width_scale: 1.0,
             bloom: true,
             film_grain: true,
             chromatic_aberration: true,
