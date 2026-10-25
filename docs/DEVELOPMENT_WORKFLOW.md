@@ -1,6 +1,6 @@
 # Multi-chat / multi-workstream development workflow
 
-This is the repeatable process for any contributor or ChatGPT conversation working on FFRS. **Use GitHub state, not ChatGPT memory, as the authority.**
+This is the repeatable process for any contributor or ChatGPT conversation working on FFRS. **Use GitHub state, not ChatGPT memory, as the authority.** To make this process mandatory at server level, the repository owner must first [enable the branch protection ruleset](BRANCH_PROTECTION_SETUP.md). GitHub workflows alone do not block direct pushes.
 
 ## 1. Determine the baselines
 
