@@ -1,23 +1,21 @@
-# FFRS Ultrawide Hybrid Fix — PROJECT STATUS
+# FFRS Ultrawide Fix + DOF — PROJECT STATUS
 
 **Canonical status dashboard · Last reviewed: 2026-10-25 · Update this file whenever a feature branch is opened, a candidate is tested, or a release is shipped.**
 
 The [GitHub repository](https://github.com/DDejua/FFRS-Ultrawide-Enhanced) is the single source of truth. **Chat history, local ZIP filenames and unpublished builds are not authoritative.** Every chat and contributor must read this dashboard and [the development workflow](docs/DEVELOPMENT_WORKFLOW.md) before modifying code or preparing a binary.
 
-## Current release — stable
+## Current release — v1.1.0 (2026-10-25)
 
-| Item | State |
-| --- | --- |
-| Released version | **v1.0.1** (manual install only) |
-| Nexus | [FFRS Ultrawide Hybrid Fix, mod #71](https://www.nexusmods.com/finalfantasyresonance/mods/71?tab=files), publicly downloadable / scanner marked safe as reported by uploader on 2026-10-24 |
-| Canonical released source | `main`: v1.0.1 functionality; newer documentation-only commits do not change the shipped binary |
-| Latest code change on `main` for v1.0.1 | [PR #1](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/1), commit `a2086e71a5a1e84f527f5f498cc1c655962db1ad` (source was then edited only in documentation) |
-| Runtime validated | 3440×1440 Windows Steam, three HUD modes during development; game-thread minimap/quest menu restoration user-tested |
-| Known issue | Controller Y sometimes fails to reopen menu; reproduced unmodded, cause/frequency difference not determined |
-| Final upload package | Script-free ZIP; `README.txt`, three HUD presets, loader, ASI and license notices; no `.cmd` or `.ps1` |
-| Published ASI fingerprint | Preserve/confirm the published binary hash when preparing the next release; a passing CI build alone is not evidence that a ZIP is identical |
+**Nexus v1.1.0 published and author-tested**: [FFRS Ultrawide Fix + DOF, mod #71](https://www.nexusmods.com/finalfantasyresonance/mods/71?tab=files). The approved game ASI was compiled from source commit `0229fcb3d93fd6616a691c69666a7d8721b20ba5` and its SHA-256 is `7c9b091522ad8e4606895218f34690551254e0b5c13426abbfefd53a057015d1`. The exact manual player ZIP is `FFRS Ultrawide DOF Fix V1.1_RimuModding.zip`, SHA-256 `a3abfbe40a0e55002876fa988e67896ad1eccc8fc52adc4e69df546dcc2d26b0`. Source integration tracked in [PR #18](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/18); release metadata in [RELEASE_NOTES_v1.1.0.md](RELEASE_NOTES_v1.1.0.md).
 
-**NEVER overwrite `main` with a test branch or replace the released Nexus ZIP because a test compiled.** A release needs its own integration and in-game verification. Do not treat a GitHub Actions artifact as the final mod package.
+- **DOF:** enabled by default at ultrawide resolutions; mathematically exact two-anchor fit 16:9 -> 1.00 and 3440×1440 -> 1.50, with bounded theoretical predictions at other ratios. 32:9/higher remain **unverified**.
+- **Crash fix:** incorporates the exact encounter no-crop pending-state reset source `fafe80a7e8fdd012bf4a28a924c1cb5dc841c804`; several hours without the previously reported crash during author testing. Not a universal stability guarantee.
+- **HYBRID, ULTRAWIDE and CLASSIC** HUD presets remain; pre-rendered 16:9 FMVs preserved. HYBRID default.
+- **Install:** manual player ZIP, official pinned/hash-verified `winmm.dll` plus ASI/TOML; no `.cmd`, `.bat` or `.ps1` executable installers. Borderless Windowed is recommended to avoid Fullscreen stretching.
+- **Opt out:** `[post_processing] ultrawide_dof_fix = false` keeps native DOF; `depth_of_field = false` disables all DOF.
+- **Nexus, Steam and modders Discord announcements** reported complete by the author. GitHub branch/PR/release state must be verified independently and never inferred from those announcements.
+
+**Source vs distribution:** the release archive includes the exact author-approved game binary. GitHub source documentation updates may add commits without modifying that compiled binary; only the v1.1.0 source tree (not later docs) should be used to reproduce the released ASI fingerprint.
 
 ## Branches — their purpose
 
@@ -30,15 +28,11 @@ The [GitHub repository](https://github.com/DDejua/FFRS-Ultrawide-Enhanced) is th
 
 Existing pre-workflow branches were created off `main` before the `develop` policy; they remain historical experiments. Do not merge them wholesale. Prefer **cherry-picking/reapplying the specific verified change to a fresh branch based on `develop`**, then create a PR.
 
-## Workstreams in progress
+## Release tracking and follow-ups
 
-**Next combined release tracker:** [Issue #7 — integration and publication gates](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/7). This is the checklist for combining independently tested branches into one release.
+**Published feature integration:** [PR #18](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/18) addresses [Issue #4 (encounter stability)](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/4) and [Issue #5 (DOF)](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/5). [Issue #7](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/7) tracks cumulative release gates and notes. The user has approved the combined v1.1 build and uploaded it on Nexus.
 
-| Workstream | Tracking | Branch / build | State | Next evidence |
-| --- | --- | --- | --- | --- |
-| Castle exploration crash, memory access violation `0xC0000005` | [Issue #4](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/4) | [`test/encounter-pending-reset-v102`](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/tree/test/encounter-pending-reset-v102), [Windows CI #40168924552](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/actions/runs/40168924552) | **COMPILED, GAME TEST NOT CONFIRMED. NOT MERGED / NOT RELEASED.** | Check encounter/cinematic behavior and extended castle exploration. If passed, rebase/reapply patch onto fresh `develop` branch and PR. |
-| Depth of field / ultrawide postprocessing | [Issue #5](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/5) | No code branch or candidate confirmed | **RESEARCH ONLY; NO PATCH YET** | Reproduce and characterize DOF before proposing fix. |
-| Input Y requiring repeated press | Tracked as known limitation in README; may become issue if actionable | No active fix | **UNMODDED REPRODUCTION CONFIRMED; NOT SOLVED** | Record a consistent repro and isolate native vs modded frequency if needed. |
+**Future testing:** Find a 32:9 monitor owner for 5120×1440 or larger DOF calibration; investigate any report of incorrect resolution/fullscreen stretching; preserve the previous Issue #4 crash fix in all future updates. Gamepad Y-menu behavior was observed in the unmodded game and is not fixed here.
 
 ## Branch protection enforcement status
 

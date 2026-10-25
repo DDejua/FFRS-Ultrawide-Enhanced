@@ -11,6 +11,7 @@
 
 mod aspect_ratio;
 mod background;
+mod dof_aspect;
 mod encounter;
 mod fonts;
 mod hud;
@@ -35,6 +36,8 @@ pub fn install(module: &ModuleInfo, config: &Config) {
     if config.background.enable {
         background::apply(module);
     }
+    // Seed resolution before the HUD exists; the live HUD viewport later supersedes it.
+    dof_aspect::seed_game_settings();
     post_processing::install(module, config.post_processing);
     if config.hud.enable {
         // Re-framing the capture and holding the transition's layout to its
