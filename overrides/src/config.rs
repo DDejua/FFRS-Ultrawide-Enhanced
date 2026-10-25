@@ -68,6 +68,8 @@ pub struct Background {
 pub struct PostProcessing {
     pub motion_blur: bool,
     pub depth_of_field: bool,
+    /// Opt-in diagnostic logging; never changes DOF settings or render state.
+    pub dof_probe: bool,
     pub bloom: bool,
     pub film_grain: bool,
     pub chromatic_aberration: bool,
@@ -79,6 +81,7 @@ impl Default for PostProcessing {
         Self {
             motion_blur: true,
             depth_of_field: true,
+            dof_probe: false,
             bloom: true,
             film_grain: true,
             chromatic_aberration: true,

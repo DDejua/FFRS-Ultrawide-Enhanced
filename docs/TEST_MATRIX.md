@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | Nexus public **v1.0.1** (manual-only) | [PR #1](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/1), source `a2086e71a5a1e84f527f5f498cc1c655962db1ad` | [CI #40078489074](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/actions/runs/40078489074) | HYBRID menu fix (3440×1440) observed working; user later encountered one castle exploration crash. No verified post-upload complete regression result recorded. | **PUBLISHED with open crash issue #4; caution.** |
 | Crash hypothesis — **pending-state guard** | [`test/encounter-pending-reset-v102`](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/tree/test/encounter-pending-reset-v102) | [CI #40168924552](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/actions/runs/40168924552) — success | **NOT CONFIRMED**; precise ASI not yet reported tested in game | **NOT MERGED / NOT PUBLISHED** |
-| DOF experiment | [Issue #5](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/5) | None | None | **NOT IMPLEMENTED** |
+| DOF observational repro / opt-in telemetry | [Issue #5](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/5), `test/dof-diagnostics-issue5` | Unverified: see PR/CI | **Visual repro only:** 16:9, mod ON, depth blur visible; 3440×1440, mod ON, depth blur greatly reduced. Diagnostic ASI not yet tested. | **RESEARCH / SOURCE PROBE; NOT A FIX** |
 
 > Earlier v1.0.0 testing confirmed multiple modes and installation behavior. It does not validate a subsequently rebuilt or combined binary.
 
