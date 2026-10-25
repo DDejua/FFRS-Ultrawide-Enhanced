@@ -9,6 +9,8 @@ use windows::Win32::System::LibraryLoader::GetModuleFileNameW;
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub super_enable: bool,
+    /// Diagnostic only: keep the game's original axis constraint on ultrawide.
+    pub dof_test_original_axis: bool,
     pub hud: Hud,
     pub minimap: Minimap,
     pub movies: Movies,
@@ -68,6 +70,8 @@ pub struct Background {
 pub struct PostProcessing {
     pub motion_blur: bool,
     pub depth_of_field: bool,
+    /// Opt-in diagnostic logging; never changes DOF settings or render state.
+    pub dof_probe: bool,
     pub bloom: bool,
     pub film_grain: bool,
     pub chromatic_aberration: bool,
@@ -79,6 +83,7 @@ impl Default for PostProcessing {
         Self {
             motion_blur: true,
             depth_of_field: true,
+            dof_probe: false,
             bloom: true,
             film_grain: true,
             chromatic_aberration: true,
@@ -108,6 +113,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             super_enable: true,
+            dof_test_original_axis: false,
             hud: Hud::default(),
             minimap: Minimap::default(),
             movies: Movies::default(),
