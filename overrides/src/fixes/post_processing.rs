@@ -41,6 +41,8 @@ pub(super) fn install(module: &ModuleInfo, config: PostProcessing) {
     };
     let reported = AtomicBool::new(false);
     // Diagnostic-only counter: sparse logging prevents per-frame I/O.
+    // Extra v2 values probe filmback/sensor and focus transition geometry,
+    // which the first two user logs did not expose.
     // Flag defaults to false; production config with all effects true
     // returns above without installing this hook.
     let sampled_views = AtomicU64::new(0);
@@ -53,10 +55,14 @@ pub(super) fn install(module: &ModuleInfo, config: PostProcessing) {
                 // Only read the engine's already-blended settings. No DOF
                 // override, camera edits, FOV changes or external mod required.
                 log::info!(
-                    "DOF_DIAG view={} focal_distance={} fstop={} scale={} depth_blur_amount={} depth_blur_radius={}",
+                    "DOF_DIAG_V2 view={} focal_distance={} fstop={} sensor_width={} focal_region={} near_transition={} far_transition={} scale={} depth_blur_amount={} depth_blur_radius={}",
                     sample,
                     post.DepthOfFieldFocalDistance,
                     post.DepthOfFieldFstop,
+                    post.DepthOfFieldSensorWidth,
+                    post.DepthOfFieldFocalRegion,
+                    post.DepthOfFieldNearTransitionRegion,
+                    post.DepthOfFieldFarTransitionRegion,
                     post.DepthOfFieldScale,
                     post.DepthOfFieldDepthBlurAmount,
                     post.DepthOfFieldDepthBlurRadius,
