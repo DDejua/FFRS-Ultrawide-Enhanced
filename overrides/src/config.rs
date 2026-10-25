@@ -9,6 +9,10 @@ use windows::Win32::System::LibraryLoader::GetModuleFileNameW;
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub super_enable: bool,
+    /// Diagnostic only: keep the game's original axis constraint on ultrawide.
+    pub dof_test_original_axis: bool,
+    /// Diagnostic only: force horizontal FOV for an orthogonal camera test.
+    pub dof_test_force_x_axis: bool,
     pub hud: Hud,
     pub minimap: Minimap,
     pub movies: Movies,
@@ -68,6 +72,11 @@ pub struct Background {
 pub struct PostProcessing {
     pub motion_blur: bool,
     pub depth_of_field: bool,
+    /// Opt-in diagnostic logging; never changes DOF settings or render state.
+    pub dof_probe: bool,
+    /// TEST ONLY: multiplication of the engine's sensor width during gameplay DOF.
+    /// 1.0 preserves exact original render behavior; never auto scales with aspect.
+    pub dof_test_sensor_width_scale: f32,
     pub bloom: bool,
     pub film_grain: bool,
     pub chromatic_aberration: bool,
@@ -79,6 +88,8 @@ impl Default for PostProcessing {
         Self {
             motion_blur: true,
             depth_of_field: true,
+            dof_probe: false,
+            dof_test_sensor_width_scale: 1.0,
             bloom: true,
             film_grain: true,
             chromatic_aberration: true,
@@ -108,6 +119,8 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             super_enable: true,
+            dof_test_original_axis: false,
+            dof_test_force_x_axis: false,
             hud: Hud::default(),
             minimap: Minimap::default(),
             movies: Movies::default(),
