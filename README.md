@@ -14,6 +14,17 @@ The **published player-facing ZIP is manual-install only**: it contains `winmm.d
 
 > **Source vs download:** PowerShell files in this *source repository's* `scripts/` directory prepare builds and run security/license audits. They are **developer build tools only** and are **not included in the public Nexus archive**, which installs by manual file copying.
 
+## Unreleased v1.0.2 candidate — DOF + stability (NOT on Nexus)
+
+[Draft combined PR #18](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/18) includes the tested encounter pending reset and automatic DOF compensation. This code is **pending in-game regression** and is not a stable public release. [Technical formula, calibration and limitations](docs/DOF_AUTO_FORMULA.md).
+
+- `[post_processing] depth_of_field=true` retains DOF (default).
+- `[post_processing] ultrawide_dof_fix=true` enables aspect-ratio-aware compensation (default).
+- `depth_of_field=false` removes DOF completely, including ultrawide compensation.
+- `ultrawide_dof_fix=false` disables *only* extra compensation, retaining original game DOF.
+- User-tested at 3440×1440 (1.50×) including map, town and interiors; **32:9 and larger predictions are currently theoretical**.
+- Normal player archives remain **manual copy only**, zero `.cmd`, `.ps1` or `.bat` included.
+
 ## HUD modes
 
 - **HYBRID (default):** centered 16:9 HUD with the minimap positioned toward the right edge of an ultrawide display.
