@@ -33,6 +33,10 @@ if ($dllHash -ne $ExpectedDllSha256.ToLowerInvariant()) {
   throw "Published v1.1.0 loader differs from author-approved ThirteenAG DLL: $dllHash"
 }
 Copy-Item -LiteralPath $dll[0].FullName -Destination (Join-Path $dest 'winmm.dll') -Force
+# Include the hash-verified previous manual package in the internal CI artifact so
+# a new manual-only release may retain all original files, legal notices and
+# HUD presets byte-for-byte. Never distribute this nested old ZIP as the update.
+Copy-Item -LiteralPath $tmp -Destination (Join-Path $dest 'approved-v1.1.0-source.zip') -Force
 $originalSource = 'https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/x64-latest/winmm-x64.zip'
 $report = @(
   'Ultimate ASI Loader: frozen verified original v1.1.0 binary'
