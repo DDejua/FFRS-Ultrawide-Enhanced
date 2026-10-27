@@ -4,6 +4,13 @@
 
 The [GitHub repository](https://github.com/DDejua/FFRS-Ultrawide-Enhanced) is the single source of truth. **Chat history, local ZIP filenames and unpublished builds are not authoritative.** Every chat and contributor must read this dashboard and [the development workflow](docs/DEVELOPMENT_WORKFLOW.md) before modifying code or preparing a binary.
 
+## Next release candidate — v1.1.1 (2026-10-27)
+
+- **Incremental FMV fix:** the only new game source is `overrides/src/fixes/movies.rs` from author-tested [Issue #23](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/issues/23) / [PR #28](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/28), merged into `develop`. Existing DOF, crash, HUD, minimap and general story movie source is not replaced.
+- **Game tests:** Cloud in all three HUD presets at 3440×1440; Terra, Bahamut, Warrior of Light; author-observed initial story FMVs. 32:9 not physically tested; code uses dynamic aspect and DPI scaling. No universal crash-free guarantee.
+- **Original loader preserved:** [PR #27](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/27) changed *build-only* provenance sourcing to the SHA-256-pinned v1.1.0 public archive after vendor `x64-latest` changed its ZIP checksum. Approved `winmm.dll` binary remains byte-for-byte identical (SHA-256 `900fa114af8317bfe22015ca77becc1afa9853831213ff17a5e03e0f45d58937`).
+- **Release process:** auditable manual ZIP and protected `develop` → `main` PR required. GitHub v1.1.1 publication and Nexus mod #71 upload must be independently confirmed; preparing an archive does not mean it has been published. `main`/public Nexus v1.1.0 stays stable until then.
+
 ## Current release — v1.1.0 (2026-10-25)
 
 **Nexus v1.1.0 published and author-tested**: [FFRS Ultrawide Fix + DOF, mod #71](https://www.nexusmods.com/finalfantasyresonance/mods/71?tab=files). The approved game ASI was compiled from source commit `0229fcb3d93fd6616a691c69666a7d8721b20ba5` and its SHA-256 is `7c9b091522ad8e4606895218f34690551254e0b5c13426abbfefd53a057015d1`. The exact manual player ZIP is `FFRS Ultrawide DOF Fix V1.1_RimuModding.zip`, SHA-256 `a3abfbe40a0e55002876fa988e67896ad1eccc8fc52adc4e69df546dcc2d26b0`. Source integration tracked in [PR #18](https://github.com/DDejua/FFRS-Ultrawide-Enhanced/pull/18); release metadata in [RELEASE_NOTES_v1.1.0.md](RELEASE_NOTES_v1.1.0.md).
