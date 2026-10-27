@@ -1,0 +1,69 @@
+name: v1.1.1 release package verification and controlled GitHub publication
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'RELEASE_NOTES_v1.1.1.md'
+      - 'scripts/package-v111.py'
+      - '.github/workflows/release-v1.1.1.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'RELEASE_NOTES_v1.1.1.md'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-verify:
+    # Release PR from own repo or reviewed push on main; no arbitrary forks.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Rust toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.99.1 --profile minimal
+          rustup default 1.99.1
+      - name: Prepare pinned source overlay (includes all v1.1 patches)
+        shell: pwsh
+        run: .\scripts\prepare-upstream.ps1
+      - name: Compile the complete integrated module
+        shell: pwsh
+        working-directory: upstream
+        run: |
+          $env:RUSTFLAGS = "--remap-path-prefix=$env:USERPROFILE=/rust-home --remap-path-prefix=$env:GITHUB_WORKSPACE=/workspace"
+          $env:CARGO_INCREMENTAL = '0'
+          cargo build --release --locked
+          if ($LASTEXITCODE -ne 0) { throw 'Cargo compilation failed' }
+      - name: Get byte-pinned previous player archive
+        shell: pwsh
+        run: |
+          $uri = 'https://github.com/DDejua/FFRS-Ultrawide-Enhanced/releases/download/v1.1.0/FFRS.Ultrawide.DOF.Fix.V1.1.0_RimuModding.zip'
+          Invoke-WebRequest -Uri $uri -OutFile "$env:RUNNER_TEMP\approved-v1.1.0.zip" -MaximumRedirection 10
+      - name: Create and verify manual-only v1.1.1 package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          python scripts/package-v111.py "$env:RUNNER_TEMP\approved-v1.1.0.zip" "upstream\target\release\final_fantasy_resonance_fix.dll" "release\FFRS_Ultrawide_DOF_Fix_v1.1.1_RimuModding.zip" "$env:GITHUB_SHA" "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+          if ($LASTEXITCODE -ne 0) { throw 'Release package integrity failed' }
+      - name: Upload audited release ZIP for PR review
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffrs-v1.1.1-MANUAL-PACKAGE
+          path: release/FFRS_Ultrawide_DOF_Fix_v1.1.1_RimuModding.zip
+          if-no-files-found: error
+      - name: Publish GitHub v1.1.1 only after protected main merge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view v1.1.1 --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw 'v1.1.1 release already exists. Never overwrite without explicit review.'
+          }
+          gh release create v1.1.1 "release\FFRS_Ultrawide_DOF_Fix_v1.1.1_RimuModding.zip" --repo "$env:GITHUB_REPOSITORY" --title "FFRS Ultrawide Fix + DOF v1.1.1" --notes-file RELEASE_NOTES_v1.1.1.md --latest
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub publication failed; verify token release permission' }
