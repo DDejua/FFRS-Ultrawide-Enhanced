@@ -48,6 +48,16 @@ jobs:
       - name: Collect full notices from pinned Rust crates
         shell: pwsh
         run: .\scripts\collect-crate-notices.ps1
+      # Temporary issue #23 test-only artifact: this runs before the external
+      # upstream x64-latest loader provenance check. The latter still fails
+      # CLOSED if its pinned digest changes. Never use this DLL-only artifact
+      # as a public install ZIP, and never replace winmm.dll with it.
+      - name: Upload isolated FMV test DLL (no loader, not for publication)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffrs-issue23-test-only-dll-no-loader
+          path: upstream/target/release/final_fantasy_resonance_fix.dll
+          if-no-files-found: error
       - name: Confirm bundled loader matches official ThirteenAG asset
         shell: pwsh
         run: .\scripts\check-official-loader.ps1
