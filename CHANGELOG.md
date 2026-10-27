@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.1 — 2026-10-27 (Vision FMV transparency update; Nexus upload pending)
+
+**Fixed:** Transparent Vision intros such as Cloud and Terra now retain the live battle backdrop under the centered 16:9 movie. The mod creates black bars only **outside** the film instead of across its central transparent area. Bahamut and Warrior of Light's standalone movies are visually unchanged.
+
+**Preserved:** v1.1.0 DOF automation and controls, encounter stability guard, all three HUD modes, minimap/menu fixes, correct story FMVs and the original exact ThirteenAG ASI Loader. Manual install only.
+
+**Test coverage:** 3440×1440 on HYBRID/ULTRAWIDE/CLASSIC for Cloud, plus Terra/Bahamut/Warrior of Light and author-tested opening story films. Larger formats including 32:9 are supported by resolution-driven calculations but **not hardware-tested**. See [full v1.1.1 notes](RELEASE_NOTES_v1.1.1.md). No blanket crash-free guarantee.
+
+
 ## 1.1.0 — 2026-10-25 (public Nexus release)
 
 **New:**
