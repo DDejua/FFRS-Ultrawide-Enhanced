@@ -503,8 +503,9 @@ pub(super) unsafe fn on_rebuild(user: *mut UUserWidget) {
         // Only the observed battle-cinematic class gets two side strips.
         // Projector (including story FMVs) retains its original one-image
         // backdrop and both native 16:9 fitting paths remain unchanged.
+        let owner = user.cast::<UObject>();
         let battle = waits_for_sequence(root)
-            && (&*(*user).Class).Name == BATTLE_CINEMATIC.get();
+            && (&*(*owner).Class).Name == BATTLE_CINEMATIC.get();
         let right = if battle { spawn_backdrop_image(tree) } else { null_mut() };
         if overlay.is_null() || black.is_null() || (battle && right.is_null()) {
             log::warn!("Movie backdrop: allocation failed.");
