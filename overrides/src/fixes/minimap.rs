@@ -31,9 +31,12 @@ const EXTRA_CORNER_Y_PX: f64 = 18.0;
 const ASPECT_16_10: f64 = 16.0 / 10.0;
 const ASPECT_16_10_TOLERANCE: f64 = 0.006;
 // The 16:9 HUD root sits in the middle of a taller 16:10 viewport.
-// Reclaim 75% of its top inset, preserving a similar small top margin to
-// the already-authored minimap right margin. This is an initial visual tune.
-const TOP_INSET_RECLAIM: f64 = 0.75;
+// Reclaim the full top inset of the centered 16:9 HUD when rendering
+// at 16:10. Author's screenshot measurements at 2560x1600 show that the
+// previous 75% lift left the map around 20 physical pixels too low; this
+// extra 25% aligns its top/right corner margins without changing X.
+// Keep this strictly aspect-gated: ultrawide uses its original separate branch.
+const TOP_INSET_RECLAIM: f64 = 1.0;
 
 fn hud_top_lift_16_10(width: f64, height: f64, dpi: f64) -> f64 {
     if !width.is_finite() || !height.is_finite() || !dpi.is_finite()
