@@ -231,12 +231,12 @@ unsafe fn move_quest_16_10(widget: *mut UWidget, rebuild: bool) {
     unsafe {
         if !(*widget).IsA(UUserWidget::StaticClass()) { return; }
         static QUEST_CLASS: NameCache = NameCache::new("WBP_FieldQuestLayout_C");
-        if (&*(*widget).Class).Name != QUEST_CLASS.get() { return; }
+        if (&*(&(*widget)).Class).Name != QUEST_CLASS.get() { return; }
         let Some((width, height, dpi)) = viewport_size_and_scale(widget) else {
             return;
         };
         let lift = hud_top_lift_16_10(width, height, dpi);
-        let id = format!("quest:{}:{}", (*widget).GetFullName(), (*widget).Index);
+        let id = format!("quest:{}:{}", (*widget).GetFullName(), (&(*widget)).Index);
         let current_y = (*widget).RenderTransform.Translation.Y as f32;
         let next_y = QUEST_ORIGINAL_Y.with_borrow_mut(|states| {
             if lift <= 0.0 && !states.contains_key(&id) { return None; }
