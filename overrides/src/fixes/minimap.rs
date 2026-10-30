@@ -25,11 +25,39 @@ const BASE_ASPECT: f64 = 16.0 / 9.0;
 // Physical screen pixels; divided by DPI before writing UMG translations.
 const EXTRA_CORNER_X_PX: f64 = 18.0;
 const EXTRA_CORNER_Y_PX: f64 = 18.0;
+// Issue #31: 16:10-only corner alignment. Accept native Y700 3040x1904
+// (1.59664) as well as exact 2560x1600 and Steam Deck 1280x800.
+// 21:9, 32:9, 16:9 and other formats never enter this adjustment.
+const ASPECT_16_10: f64 = 16.0 / 10.0;
+const ASPECT_16_10_TOLERANCE: f64 = 0.006;
+// The 16:9 HUD root sits in the middle of a taller 16:10 viewport.
+// Reclaim the full top inset of the centered 16:9 HUD when rendering
+// at 16:10. Author's screenshot measurements at 2560x1600 show that the
+// previous 75% lift left the map around 20 physical pixels too low.
+// Author feedback on V2: move both HUD blocks DOWN 2 physical pixels from
+// the full-inset position. Keep this strictly aspect-gated: ultrawide untouched.
+const TOP_INSET_RECLAIM: f64 = 1.0;
+const HUD_16_10_DOWN_NUDGE_PX: f64 = 2.0;
+
+fn hud_top_lift_16_10(width: f64, height: f64, dpi: f64) -> f64 {
+    if !width.is_finite() || !height.is_finite() || !dpi.is_finite()
+        || width <= 8.0 || height <= 8.0 || dpi <= 0.0
+        || (width / height - ASPECT_16_10).abs() > ASPECT_16_10_TOLERANCE
+    {
+        return 0.0;
+    }
+    // Remove the 16:9 letterbox top inset, then preserve a two-pixel
+    // screen-space breathing gap in both minimap and quest widgets.
+    // Divide by DPI after calculating physical pixels.
+    (((height - width / BASE_ASPECT) * 0.5).max(0.0)
+        * TOP_INSET_RECLAIM - HUD_16_10_DOWN_NUDGE_PX).max(0.0) / dpi
+}
 
 thread_local! {
     static REPORTED: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
     static ORIGINAL_X: RefCell<HashMap<String, OffsetState>> = RefCell::new(HashMap::new());
     static ORIGINAL_Y: RefCell<HashMap<String, OffsetState>> = RefCell::new(HashMap::new());
+    static QUEST_ORIGINAL_Y: RefCell<HashMap<String, OffsetState>> = RefCell::new(HashMap::new());
     static MENU_ACTIVE: Cell<bool> = const { Cell::new(false) };
     static MENU_CLOSE_PENDING: Cell<Option<Instant>> = const { Cell::new(None) };
     static GAME_TICK_SEEN: Cell<bool> = const { Cell::new(false) };
@@ -103,7 +131,13 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
         // Tolerance also absorbs tiny rounding differences at exact 16:9.
         // Wide screens outside a menu: restore the root's 16:9 side gutter, then nudge the
         // minimap nearer to the physical top-right edge. Exact 16:9 stays 0,0.
-        let (shift_x, shift_y) = if ratio > BASE_ASPECT + 0.001 {
+        let lift_16_10 = hud_top_lift_16_10(width, height, dpi);
+        let (shift_x, shift_y) = if lift_16_10 > 0.0 {
+            // On 16:10, leave the authored horizontal position unchanged.
+            // Only reclaim vertical room created by the centered 16:9 HUD.
+            (0.0, -lift_16_10)
+        } else if ratio > BASE_ASPECT + 0.001 {
+            // Original ultrawide branch: intentionally byte-for-byte unchanged.
             (
                 (width - height * BASE_ASPECT).max(0.0) / (2.0 * dpi)
                     + EXTRA_CORNER_X_PX / dpi,
@@ -182,6 +216,7 @@ unsafe fn consider(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str,
 pub(super) unsafe fn on_transform(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str) {
     if enabled { unsafe { maybe_finish_menu_close(); } }
     if enabled { unsafe { observe_quest(widget); } }
+    unsafe { move_quest_16_10(widget, false); }
     unsafe { consider(widget, probe, enabled, hint, false) }
 }
 
@@ -189,7 +224,51 @@ pub(super) unsafe fn on_transform(widget: *mut UWidget, probe: bool, enabled: bo
 pub(super) unsafe fn on_rebuild(widget: *mut UWidget, probe: bool, enabled: bool, hint: &str) {
     if enabled { unsafe { maybe_finish_menu_close(); } }
     if enabled { unsafe { observe_quest(widget); } }
+    unsafe { move_quest_16_10(widget, true); }
     unsafe { consider(widget, probe, enabled, hint, true) }
+}
+
+/// Trial-only: move the exact field-quest overlay up by the same 16:10
+/// fraction as the minimap. Never move unrelated HUD widgets or descendants.
+/// OffsetState tracks the game's own authored transform and restores it if
+/// the same widget survives a change back to 16:9 / ultrawide.
+/// The transform callback writes in-place, the rebuild callback uses the setter.
+unsafe fn move_quest_16_10(widget: *mut UWidget, rebuild: bool) {
+    if !live(widget) { return; }
+    unsafe {
+        if !(*widget).IsA(UUserWidget::StaticClass()) { return; }
+        static QUEST_CLASS: NameCache = NameCache::new("WBP_FieldQuestLayout_C");
+        if (&*(&(*widget)).Class).Name != QUEST_CLASS.get() { return; }
+        let Some((width, height, dpi)) = viewport_size_and_scale(widget) else {
+            return;
+        };
+        let lift = hud_top_lift_16_10(width, height, dpi);
+        let id = format!("quest:{}:{}", (*widget).GetFullName(), (&(*widget)).Index);
+        let current_y = (*widget).RenderTransform.Translation.Y as f32;
+        let next_y = QUEST_ORIGINAL_Y.with_borrow_mut(|states| {
+            if lift <= 0.0 && !states.contains_key(&id) { return None; }
+            let state = states.entry(id.clone()).or_default();
+            let shifted = apply_offset(state, current_y, -(lift as f32));
+            if (shifted - current_y).abs() < 0.0001 { None } else { Some(shifted) }
+        });
+        let Some(applied_y) = next_y else { return; };
+        if rebuild {
+            // Do not borrow QUEST_ORIGINAL_Y across the engine setter; it can
+            // re-enter our native UpdateRenderTransform hook.
+            let x = (*widget).RenderTransform.Translation.X;
+            (*widget).SetRenderTranslation(&FVector2D::new(x, f64::from(applied_y)));
+        } else {
+            (*widget).RenderTransform.Translation.Y = f64::from(applied_y);
+        }
+        report_once(
+            format!("quest_16_10:{id}:{:.0}", lift),
+            format!(
+                "HUD_16_10_QUEST phase={} id={} viewport={}x{} dpi={:.3} y={:.2}->{:.2} lift_px={:.2}",
+                if rebuild { "rebuild" } else { "transform" },
+                id, width, height, dpi, current_y, applied_y, lift * dpi,
+            ),
+        );
+    }
 }
 
 /// The system-menu visibility gate, called from the existing SetVisibility hook.
